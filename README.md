@@ -58,24 +58,30 @@ for underclassmen and would only add noise.
 ## Running it
 
 ```bash
-# Backend - http://127.0.0.1:8000 (docs at /docs)
-cd backend
-uv venv && uv pip install -e ".[dev]"
-.venv/bin/python -m app.seed          # load the checked-in registrar tables
-.venv/bin/python -m uvicorn app.main:app --reload
-
-# Frontend - http://localhost:5173, proxies /api to the backend
-cd frontend
-npm install
-npm run dev
+./dev
 ```
+
+Then open <http://localhost:5173>. Ctrl+C stops both servers.
+
+That is the whole thing on a fresh clone too - the script creates the
+virtualenv, installs both dependency sets, and seeds the database if any of
+those are missing, then starts the API and the web server together with
+prefixed logs. Re-running it skips whatever is already done.
+
+Requires `uv` and `npm` (`brew install uv node`). Override the ports with
+`API_PORT=8001 WEB_PORT=5174 ./dev`.
+
+To reseed from scratch, delete `backend/scheduler.db` and run `./dev` again.
 
 ## Checks
 
 ```bash
-cd backend  && .venv/bin/python -m pytest && .venv/bin/ruff check .
-cd frontend && npm run build && npx eslint src
+./check
 ```
+
+Runs the backend tests, ruff lint and format, the frontend typecheck and build,
+and eslint. Everything runs even if something fails, so one pass reports all the
+problems rather than the first one.
 
 ## Adding more exam data
 

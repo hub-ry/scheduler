@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+#
+# Start the whole app: ./dev
+#
+# Bootstraps anything missing (virtualenv, dependencies, seeded database) and
+# then runs the API and the web server together, streaming both logs with a
+# prefix so it is clear which side is talking. Ctrl+C stops both.
+#
+# Everything here is idempotent - running it on a fresh clone and running it
+# for the hundredth time do the same thing, just at different speeds.
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND="$ROOT/backend"
+FRONTEND="$ROOT/frontend"
+API_PORT="${API_PORT:-8000}"
+WEB_PORT="${WEB_PORT:-5173}"
+
+BOLD=$'\033[1m'; DIM=$'\033[2m'; RED=$'\033[31m'; GREEN=$'\033[32m'
+BLUE=$'\033[34m'; MAGENTA=$'\033[35m'; RESET=$'\033[0m'
+
+say()  { printf '%s==>%s %s\n' "$BOLD" "$RESET" "$*"; }
+warn() { printf '%s==>%s %s\n' "$RED" "$RESET" "$*" >&2; }
+
+require() {
+  command -v "$1" >/dev/null 2>&1 || {
+    warn "$1 is required but not installed. $2"
+    exit 1
+  }
+}
+
+# A port already in use is almost always a previous ./dev that was killed
+# without cleaning up. Say so plainly rather than letting the server fail with
+# an opaque bind error.
+check_port() {
+  if lsof -i ":$1" -sTCP:LISTEN >/dev/null 2>&1; then
+    warn "Port $1 is already in use (the $2 needs it)."
+    warn "Stop whatever is on it, or re-run with API_PORT=... / WEB_PORT=... to pick another."
+    exit 1
+  fi
+}
+
+require uv "Install it with: brew install uv"
+require npm "Install Node.js: brew install node"
+
+check_port "$API_PORT" "api"
+check_port "$WEB_PORT" "web"
+
+# ---------------------------------------------------------------- backend prep
+
+if [ ! -d "$BACKEND/.venv" ]; then
+  say "Creating the Python virtualenv"
+  (cd "$BACKEND" && uv venv)
+fi
+
+PYTHON="$BACKEND/.venv/bin/python"
+
+# pyproject is the source of truth for dependencies, so reinstall whenever it is
+# newer than the marker we drop after a successful install.
+STAMP="$BACKEND/.venv/.deps-installed"
+if [ ! -f "$STAMP" ] || [ "$BACKEND/pyproject.toml" -nt "$STAMP" ]; then
+  say "Installing Python dependencies"
+  (cd "$BACKEND" && uv pip install --quiet -e ".[dev]")
+  touch "$STAMP"
+fi
+
+if [ ! -f "$BACKEND/scheduler.db" ]; then
+  say "Seeding the database from data/"
+  (cd "$BACKEND" && "$PYTHON" -m app.seed)
+fi
+
+# --------------------------------------------------------------- frontend prep
+
+if [ ! -d "$FRONTEND/node_modules" ] || [ "$FRONTEND/package.json" -nt "$FRONTEND/node_modules" ]; then
+  say "Installing npm dependencies"
+  (cd "$FRONTEND" && npm install --silent)
+fi
+
+# ------------------------------------------------------------------------- run
+
+# Each server is launched DIRECTLY rather than through a wrapper, so $! is the
+# real process and not something that merely forwards to it:
+#
+#   - vite from node_modules/.bin, not `npm run dev`; npm sits in between as a
+#     parent that does not reliably pass signals to its child.
+#   - output is prefixed via process substitution, not a pipe; with `cmd | prefix`
+#     $! is the PID of `prefix`, so we would be signalling the wrong process.
+#
+# That leaves two ordinary PIDs to manage, and each server cleans up its own
+# workers (uvicorn's reloader forwards to its worker) when signalled properly.
+
+prefix() {
+  local label=$1 color=$2
+  while IFS= read -r line; do
+    printf '%s%s%s %s\n' "$color" "$label" "$RESET" "$line"
+  done
+}
+
+api_pid=""
+web_pid=""
+
+cleanup() {
+  trap - INT TERM EXIT
+  echo
+  say "Shutting down"
+  local pid
+  for pid in "$api_pid" "$web_pid"; do
+    [ -n "$pid" ] && kill -TERM "$pid" 2>/dev/null || true
+  done
+  # Give them a moment to stop cleanly, then insist.
+  for _ in $(seq 1 20); do
+    kill -0 "$api_pid" 2>/dev/null || kill -0 "$web_pid" 2>/dev/null || break
+    sleep 0.1
+  done
+  for pid in "$api_pid" "$web_pid"; do
+    [ -n "$pid" ] && kill -KILL "$pid" 2>/dev/null || true
+  done
+  # Deliberately NOT `wait`: the log-prefixing readers are process substitutions
+  # whose pipe this script holds open, so they never see EOF and waiting on them
+  # hangs forever. They exit on their own when the script does.
+  exit 0
+}
+trap cleanup INT TERM EXIT
+
+say "API  ${DIM}http://127.0.0.1:$API_PORT${RESET}  (docs at /docs)"
+say "Web  ${GREEN}http://localhost:$WEB_PORT${RESET}"
+echo
+
+cd "$BACKEND"
+"$PYTHON" -m uvicorn app.main:app --reload --port "$API_PORT" \
+  > >(prefix "[api]" "$BLUE") 2>&1 &
+api_pid=$!
+
+cd "$FRONTEND"
+./node_modules/.bin/vite --port "$WEB_PORT" --strictPort \
+  > >(prefix "[web]" "$MAGENTA") 2>&1 &
+web_pid=$!
+
+# Exit as soon as either side dies, rather than leaving a half-running app that
+# looks fine until the first request fails. Polled rather than `wait -n`, which
+# needs bash 4 - macOS still ships bash 3.2 as /bin/bash, and the script should
+# not depend on the user having a newer one on PATH.
+while kill -0 "$api_pid" 2>/dev/null && kill -0 "$web_pid" 2>/dev/null; do
+  sleep 1
+done
+warn "One of the servers exited - stopping the other."

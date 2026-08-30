@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+#
+# Run every check the project has: ./check
+#
+# Same commands CI would run - tests and lint on the backend, typecheck, build,
+# and lint on the frontend. Runs all of them even when one fails, then reports a
+# summary, because finding out about three problems at once beats three rounds.
+
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND="$ROOT/backend"
+FRONTEND="$ROOT/frontend"
+
+BOLD=$'\033[1m'; RED=$'\033[31m'; GREEN=$'\033[32m'; RESET=$'\033[0m'
+
+failures=()
+
+run() {
+  local label=$1; shift
+  printf '\n%s==> %s%s\n' "$BOLD" "$label" "$RESET"
+  if "$@"; then
+    printf '%s    ok%s\n' "$GREEN" "$RESET"
+  else
+    printf '%s    FAILED%s\n' "$RED" "$RESET"
+    failures+=("$label")
+  fi
+}
+
+if [ ! -d "$BACKEND/.venv" ] || [ ! -d "$FRONTEND/node_modules" ]; then
+  echo "Dependencies are not installed. Run ./dev once first." >&2
+  exit 1
+fi
+
+PYTHON="$BACKEND/.venv/bin/python"
+
+run "backend tests"    "$PYTHON" -m pytest -q --rootdir "$BACKEND" "$BACKEND/tests"
+run "backend lint"     "$BACKEND/.venv/bin/ruff" check "$BACKEND"
+run "backend format"   "$BACKEND/.venv/bin/ruff" format --check "$BACKEND/app" "$BACKEND/tests"
+run "frontend build"   npm --prefix "$FRONTEND" run build
+run "frontend lint"    npx --prefix "$FRONTEND" eslint "$FRONTEND/src"
+
+echo
+if [ ${#failures[@]} -eq 0 ]; then
+  printf '%sAll checks passed.%s\n' "$GREEN" "$RESET"
+else
+  printf '%s%d check(s) failed:%s %s\n' "$RED" "${#failures[@]}" "$RESET" "${failures[*]}"
+  exit 1
+fi
