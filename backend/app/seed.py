@@ -1,0 +1,110 @@
+"""Load the checked-in registrar tables and target-course list into the database.
+
+Run with ``python -m app.seed``. It is idempotent: exams are keyed by
+(course, start, end) and re-running replaces the set for each course rather
+than appending duplicates, so re-seeding after the registrar publishes an
+update is safe.
+
+Only exams for courses in ``target_courses.json`` are loaded. The registrar
+tables contain every course in the subject, but a 500-level midterm does not
+compete for underclassmen, and including it would drown the signal.
+"""
+
+import json
+from datetime import date
+from pathlib import Path
+
+from sqlmodel import Session, select
+
+from app.core.models import Course, Exam, Term
+from app.core.registrar import parse_exam_table
+from app.db import create_db_and_tables, engine
+
+DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+
+# The academic calendar for the seeded term. Used to clip weekly course
+# meetings so they do not generate busy time outside the semester.
+TERM_BOUNDS = {("Fall", 2026): (date(2026, 8, 24), date(2026, 12, 12))}
+
+
+def load_target_courses() -> dict:
+    return json.loads((DATA_DIR / "target_courses.json").read_text())
+
+
+def seed(session: Session) -> dict[str, int]:
+    config = load_target_courses()
+    season, year = config["term"]["season"], config["term"]["year"]
+    start, end = TERM_BOUNDS[(season, year)]
+
+    term = session.exec(select(Term).where(Term.name == f"{season} {year}")).first()
+    if term is None:
+        term = Term(name=f"{season} {year}", start_date=start, end_date=end)
+        session.add(term)
+        session.commit()
+        session.refresh(term)
+
+    courses: dict[str, Course] = {}
+    for spec in config["courses"]:
+        course = session.exec(select(Course).where(Course.code == spec["code"])).first()
+        if course is None:
+            course = Course(code=spec["code"], term_id=term.id)
+            session.add(course)
+        course.title = spec.get("title", "")
+        # Never overwrite a real enrollment someone entered with a null from the
+        # seed file; the seed only ever fills in what is still unknown.
+        if spec.get("enrollment") is not None:
+            course.enrollment = spec["enrollment"]
+        courses[spec["code"]] = course
+    session.commit()
+
+    parsed = [
+        exam
+        for path in sorted(DATA_DIR.glob("exams_*.txt"))
+        for exam in parse_exam_table(path.read_text())
+    ]
+    relevant = [e for e in parsed if e.course_code in courses]
+
+    # Replace rather than append, so a re-seed after a registrar update does not
+    # leave stale sittings behind.
+    touched = {e.course_code for e in relevant}
+    for code in touched:
+        for stale in session.exec(select(Exam).where(Exam.course_id == courses[code].id)).all():
+            session.delete(stale)
+    session.commit()
+
+    for exam in relevant:
+        session.add(
+            Exam(
+                course_id=courses[exam.course_code].id,
+                kind=exam.kind,
+                starts_at=exam.starts_at,
+                ends_at=exam.ends_at,
+                rooms=", ".join(exam.rooms),
+            )
+        )
+    session.commit()
+
+    return {
+        "courses": len(courses),
+        "exams_parsed": len(parsed),
+        "exams_loaded": len(relevant),
+        "courses_without_enrollment": sum(1 for c in courses.values() if c.enrollment is None),
+    }
+
+
+def main() -> None:
+    create_db_and_tables()
+    with Session(engine) as session:
+        stats = seed(session)
+    for key, value in stats.items():
+        print(f"{key:32} {value}")
+    if stats["courses_without_enrollment"]:
+        print(
+            f"\nNOTE: {stats['courses_without_enrollment']} target courses have no enrollment "
+            "figure, so they rank with a flat placeholder weight. Fill them into "
+            "data/target_courses.json for a sharper ranking."
+        )
+
+
+if __name__ == "__main__":
+    main()

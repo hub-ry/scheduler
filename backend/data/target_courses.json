@@ -1,0 +1,26 @@
+{
+  "_comment": [
+    "Courses whose students are the club's target audience: the big",
+    "underclassman gateway classes. Only these courses' exams count toward a",
+    "slot's score - a 400-level seminar's midterm does not compete with us.",
+    "",
+    "enrollment is null wherever nobody has entered a real roster count yet.",
+    "The ranker falls back to a flat placeholder weight for those, so results",
+    "are directionally right but the relative sizes are not. Fill these in and",
+    "the ranking sharpens considerably."
+  ],
+  "term": { "season": "Fall", "year": 2026, "campus": "PWL" },
+  "courses": [
+    { "code": "MA 16100",   "short": "MA 161",  "title": "Plane Analytic Geometry and Calculus I",  "enrollment": null },
+    { "code": "MA 16200",   "short": "MA 162",  "title": "Plane Analytic Geometry and Calculus II", "enrollment": null },
+    { "code": "MA 26100",   "short": "MA 261",  "title": "Multivariate Calculus",                   "enrollment": null },
+    { "code": "MA 26500",   "short": "MA 265",  "title": "Linear Algebra",                          "enrollment": null },
+    { "code": "MA 35100",   "short": "MA 351",  "title": "Elementary Linear Algebra",               "enrollment": null },
+    { "code": "STAT 35000", "short": "STAT 350","title": "Introduction to Statistics",              "enrollment": null },
+    { "code": "CS 25100",   "short": "CS 251",  "title": "Data Structures and Algorithms",          "enrollment": null },
+    { "code": "CS 30700",   "short": "CS 307",  "title": "Software Engineering I",                  "enrollment": null,
+      "note": "Named as a maybe - lower confidence that it is core audience." },
+    { "code": "CS 25000",   "short": "CS 250",  "title": "Computer Architecture",                   "enrollment": null,
+      "note": "Named as a target course, but the Fall 2026 midterm table lists no CS 25000 sittings. Either it has no scheduled evening exam this term or the table was filtered. Verify before relying on it." }
+  ]
+}

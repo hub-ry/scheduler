@@ -1,0 +1,153 @@
+"""Domain models.
+
+The scheduling problem is "when is my target audience least busy?", so every
+row here ultimately reduces to a weighted busy interval on a calendar.
+
+Two kinds of busy sources exist and they differ in how they repeat:
+
+- ``Course``   - recurs weekly for a whole term (MWF 10:00-10:50, etc.)
+- ``ClubEvent`` - a one-off with a concrete date, e.g. a row scraped out of the
+  weekly club email blast.
+
+Both carry a ``weight``: the estimated number of people in our target audience
+who are unavailable because of it. That is what makes slots comparable.
+"""
+
+# NOTE: deliberately no ``from __future__ import annotations`` here. SQLModel
+# resolves Relationship() targets from the runtime annotations, and stringised
+# annotations make it see a bare generic it cannot map.
+
+from datetime import date, datetime, time
+from enum import IntEnum
+
+from sqlmodel import Field, Relationship, SQLModel
+
+#: Stand-in weight for a course whose real enrollment nobody has entered yet.
+#: Deliberately a round, obviously-synthetic number so it reads as a placeholder
+#: in the UI rather than as a roster count.
+UNKNOWN_ENROLLMENT_WEIGHT = 100.0
+
+
+class Weekday(IntEnum):
+    """Matches ``datetime.date.weekday()`` so the two can be compared directly."""
+
+    MONDAY = 0
+    TUESDAY = 1
+    WEDNESDAY = 2
+    THURSDAY = 3
+    FRIDAY = 4
+    SATURDAY = 5
+    SUNDAY = 6
+
+
+class Term(SQLModel, table=True):
+    """A semester or quarter. Bounds how far a course's weekly pattern repeats."""
+
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(index=True)
+    start_date: date
+    end_date: date
+
+    courses: list["Course"] = Relationship(back_populates="term")
+
+
+class Course(SQLModel, table=True):
+    """A class that competes for our audience's time.
+
+    ``enrollment`` is the raw headcount; ``audience_fraction`` is how much of
+    that roster is actually the underclassmen we care about. Their product is
+    the weight, so a 300-person intro lecture outranks a 12-person seminar.
+
+    ``enrollment`` is ``None`` until someone supplies a real roster size. We
+    refuse to invent one, so an unknown course falls back to
+    :data:`UNKNOWN_ENROLLMENT_WEIGHT` - enough to keep it in the ranking, but a
+    flat value that cannot be mistaken for measured data.
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+    code: str = Field(index=True)
+    title: str = ""
+    enrollment: int | None = None
+    audience_fraction: float = 1.0
+    term_id: int | None = Field(default=None, foreign_key="term.id")
+
+    term: Term | None = Relationship(back_populates="courses")
+    meetings: list["CourseMeeting"] = Relationship(
+        back_populates="course",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
+    exams: list["Exam"] = Relationship(
+        back_populates="course",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
+
+    @property
+    def weight(self) -> float:
+        if self.enrollment is None:
+            return UNKNOWN_ENROLLMENT_WEIGHT * self.audience_fraction
+        return self.enrollment * self.audience_fraction
+
+    @property
+    def has_measured_enrollment(self) -> bool:
+        """Lets the UI flag rankings that rest on placeholder weights."""
+        return self.enrollment is not None
+
+
+class CourseMeeting(SQLModel, table=True):
+    """One weekly recurring block of a course. A MWF class has three of these."""
+
+    id: int | None = Field(default=None, primary_key=True)
+    course_id: int = Field(foreign_key="course.id", index=True)
+    weekday: Weekday
+    start_time: time
+    end_time: time
+
+    course: Course | None = Relationship(back_populates="meetings")
+
+
+class ClubEvent(SQLModel, table=True):
+    """A competing event at a concrete date and time.
+
+    ``expected_attendance`` plays the same role ``enrollment`` does for courses.
+    ``source`` records where the row came from ("manual", "email:2026-08-24")
+    so a re-scrape can replace its own rows without touching hand-entered ones.
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+    title: str
+    organization: str = ""
+    location: str = ""
+    starts_at: datetime = Field(index=True)
+    ends_at: datetime
+    expected_attendance: int = 0
+    audience_fraction: float = 1.0
+    source: str = "manual"
+    is_ours: bool = False
+
+    @property
+    def weight(self) -> float:
+        return self.expected_attendance * self.audience_fraction
+
+
+class Exam(SQLModel, table=True):
+    """A one-off exam sitting for a course.
+
+    Modelled separately from :class:`ClubEvent` because it is the single most
+    disruptive competitor we have: evening exams at this school land at 8:00p
+    on weeknights, which is precisely when student orgs meet. It also inherits
+    its weight from the course roster instead of carrying its own estimate.
+
+    A course has several of these per term (three midterms is typical), and the
+    registrar publishes one row per CRN, so the same sitting appears many times
+    in the source table. Dedupe on (course, date, start, end).
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+    course_id: int = Field(foreign_key="course.id", index=True)
+    kind: str = "midterm"  # "midterm" | "final" | "quiz"
+    starts_at: datetime = Field(index=True)
+    ends_at: datetime
+    rooms: str = ""
+    section: str = ""
+
+    course: Course | None = Relationship(back_populates="exams")

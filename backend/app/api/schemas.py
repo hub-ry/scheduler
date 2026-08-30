@@ -1,0 +1,149 @@
+"""Request and response bodies for the HTTP layer.
+
+Kept separate from the SQLModel tables so the wire format can stay stable while
+the storage model moves, and so computed fields (``weight``, ``conflicts``)
+can be exposed without becoming columns.
+"""
+
+from datetime import date, datetime, time
+from typing import Literal
+
+from pydantic import BaseModel, Field, model_validator
+
+from app.core.models import Weekday
+
+
+class CourseOut(BaseModel):
+    id: int
+    code: str
+    title: str
+    enrollment: int | None
+    audience_fraction: float
+    weight: float
+    has_measured_enrollment: bool
+    exam_count: int = 0
+
+
+class CourseUpdate(BaseModel):
+    """Everything here is optional; omitted fields are left alone."""
+
+    enrollment: int | None = Field(default=None, ge=0)
+    audience_fraction: float | None = Field(default=None, gt=0, le=1)
+    title: str | None = None
+
+
+class ExamOut(BaseModel):
+    id: int
+    course_code: str
+    course_title: str
+    kind: str
+    starts_at: datetime
+    ends_at: datetime
+    rooms: str
+    weight: float
+
+
+class EventIn(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    organization: str = ""
+    location: str = ""
+    starts_at: datetime
+    ends_at: datetime
+    expected_attendance: int = Field(default=0, ge=0)
+    audience_fraction: float = Field(default=1.0, gt=0, le=1)
+    source: str = "manual"
+    is_ours: bool = False
+
+    @model_validator(mode="after")
+    def _end_must_follow_start(self):
+        if self.ends_at <= self.starts_at:
+            raise ValueError("ends_at must be after starts_at")
+        return self
+
+
+class EventOut(EventIn):
+    id: int
+    weight: float
+
+
+class ConflictOut(BaseModel):
+    label: str
+    kind: Literal["course", "event", "exam"]
+    weight: float
+    overlap_minutes: float
+    overlap_fraction: float
+
+
+class SlotOut(BaseModel):
+    start: datetime
+    end: datetime
+    blocked: float
+    lost_attendance: float
+    is_clear: bool
+    conflicts: list[ConflictOut]
+
+
+class RankRequest(BaseModel):
+    """The 'when should we hold this?' query."""
+
+    window_start: date
+    window_end: date
+    duration_minutes: int = Field(default=60, ge=15, le=480)
+    earliest: time = time(17, 0)
+    latest: time = time(22, 0)
+    weekdays: list[Weekday] = Field(
+        default_factory=lambda: [
+            Weekday.MONDAY,
+            Weekday.TUESDAY,
+            Weekday.WEDNESDAY,
+            Weekday.THURSDAY,
+        ]
+    )
+    step_minutes: int = Field(default=30, ge=5, le=120)
+    limit: int = Field(default=10, ge=1, le=200)
+
+    @model_validator(mode="after")
+    def _validate_window(self):
+        if self.window_end < self.window_start:
+            raise ValueError("window_end must not precede window_start")
+        if self.latest <= self.earliest:
+            raise ValueError("latest must be after earliest")
+        if not self.weekdays:
+            raise ValueError("at least one weekday must be allowed")
+        return self
+
+
+class RankResponse(BaseModel):
+    slots: list[SlotOut]
+    considered: int
+    #: Set when any contributing course is still on a placeholder weight, so the
+    #: UI can caveat the ranking instead of presenting it as measured.
+    uses_placeholder_weights: bool
+    courses_missing_enrollment: list[str]
+
+
+class BusyOut(BaseModel):
+    """A busy block for the calendar grid."""
+
+    start: datetime
+    end: datetime
+    label: str
+    kind: str
+    weight: float
+    detail: str = ""
+
+
+class ImportRequest(BaseModel):
+    text: str = Field(min_length=1)
+    term_season: str = ""
+    term_year: int = 0
+    #: When false, rows for courses outside the target list are reported but
+    #: not written, matching the seeder's behaviour.
+    include_non_target: bool = False
+
+
+class ImportResponse(BaseModel):
+    parsed: int
+    imported: int
+    skipped_non_target: list[str]
+    unknown_courses: list[str]
