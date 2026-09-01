@@ -1,0 +1,307 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-01T15:42:16",
+  "terms": [
+    {
+      "id": 1,
+      "name": "Fall 2026",
+      "start_date": "2026-08-24",
+      "end_date": "2026-12-12"
+    }
+  ],
+  "courses": [
+    {
+      "id": 9,
+      "code": "CS 25000",
+      "title": "Computer Architecture",
+      "enrollment": null,
+      "audience_fraction": 1.0,
+      "weight": 100.0,
+      "has_measured_enrollment": false,
+      "exam_count": 0
+    },
+    {
+      "id": 7,
+      "code": "CS 25100",
+      "title": "Data Structures and Algorithms",
+      "enrollment": null,
+      "audience_fraction": 1.0,
+      "weight": 100.0,
+      "has_measured_enrollment": false,
+      "exam_count": 4
+    },
+    {
+      "id": 8,
+      "code": "CS 30700",
+      "title": "Software Engineering I",
+      "enrollment": null,
+      "audience_fraction": 1.0,
+      "weight": 100.0,
+      "has_measured_enrollment": false,
+      "exam_count": 1
+    },
+    {
+      "id": 1,
+      "code": "MA 16100",
+      "title": "Plane Analytic Geometry and Calculus I",
+      "enrollment": null,
+      "audience_fraction": 1.0,
+      "weight": 100.0,
+      "has_measured_enrollment": false,
+      "exam_count": 3
+    },
+    {
+      "id": 2,
+      "code": "MA 16200",
+      "title": "Plane Analytic Geometry and Calculus II",
+      "enrollment": null,
+      "audience_fraction": 1.0,
+      "weight": 100.0,
+      "has_measured_enrollment": false,
+      "exam_count": 3
+    },
+    {
+      "id": 3,
+      "code": "MA 26100",
+      "title": "Multivariate Calculus",
+      "enrollment": null,
+      "audience_fraction": 1.0,
+      "weight": 100.0,
+      "has_measured_enrollment": false,
+      "exam_count": 2
+    },
+    {
+      "id": 4,
+      "code": "MA 26500",
+      "title": "Linear Algebra",
+      "enrollment": null,
+      "audience_fraction": 1.0,
+      "weight": 100.0,
+      "has_measured_enrollment": false,
+      "exam_count": 2
+    },
+    {
+      "id": 5,
+      "code": "MA 35100",
+      "title": "Elementary Linear Algebra",
+      "enrollment": null,
+      "audience_fraction": 1.0,
+      "weight": 100.0,
+      "has_measured_enrollment": false,
+      "exam_count": 3
+    },
+    {
+      "id": 6,
+      "code": "STAT 35000",
+      "title": "Introduction to Statistics",
+      "enrollment": null,
+      "audience_fraction": 1.0,
+      "weight": 100.0,
+      "has_measured_enrollment": false,
+      "exam_count": 2
+    }
+  ],
+  "exams": [
+    {
+      "id": 1,
+      "course_code": "CS 25100",
+      "course_title": "Data Structures and Algorithms",
+      "kind": "midterm",
+      "starts_at": "2026-09-09T20:00:00",
+      "ends_at": "2026-09-09T21:00:00",
+      "rooms": "CL50 224, MATH 175",
+      "weight": 100.0
+    },
+    {
+      "id": 6,
+      "course_code": "MA 16100",
+      "course_title": "Plane Analytic Geometry and Calculus I",
+      "kind": "midterm",
+      "starts_at": "2026-09-23T20:00:00",
+      "ends_at": "2026-09-23T21:00:00",
+      "rooms": "LILY 1105, MATH 175, WALC 1055",
+      "weight": 100.0
+    },
+    {
+      "id": 9,
+      "course_code": "MA 16200",
+      "course_title": "Plane Analytic Geometry and Calculus II",
+      "kind": "midterm",
+      "starts_at": "2026-09-23T20:00:00",
+      "ends_at": "2026-09-23T21:00:00",
+      "rooms": "BHEE 129, BHEE 170, CL50 224, ME 1061",
+      "weight": 100.0
+    },
+    {
+      "id": 2,
+      "course_code": "CS 25100",
+      "course_title": "Data Structures and Algorithms",
+      "kind": "midterm",
+      "starts_at": "2026-09-30T20:00:00",
+      "ends_at": "2026-09-30T21:00:00",
+      "rooms": "MATH 175, WTHR 200",
+      "weight": 100.0
+    },
+    {
+      "id": 12,
+      "course_code": "MA 26100",
+      "course_title": "Multivariate Calculus",
+      "kind": "midterm",
+      "starts_at": "2026-10-05T20:00:00",
+      "ends_at": "2026-10-05T21:00:00",
+      "rooms": "BHEE 129, LILY 1105, ME 1061, STEW 183, WALC 1055, WTHR 172, WTHR 200",
+      "weight": 100.0
+    },
+    {
+      "id": 14,
+      "course_code": "MA 26500",
+      "course_title": "Linear Algebra",
+      "kind": "midterm",
+      "starts_at": "2026-10-06T20:00:00",
+      "ends_at": "2026-10-06T21:00:00",
+      "rooms": "STEW 183, WTHR 200",
+      "weight": 100.0
+    },
+    {
+      "id": 16,
+      "course_code": "MA 35100",
+      "course_title": "Elementary Linear Algebra",
+      "kind": "midterm",
+      "starts_at": "2026-10-06T20:00:00",
+      "ends_at": "2026-10-06T21:00:00",
+      "rooms": "MATH 175, RHPH 172",
+      "weight": 100.0
+    },
+    {
+      "id": 19,
+      "course_code": "STAT 35000",
+      "course_title": "Introduction to Statistics",
+      "kind": "midterm",
+      "starts_at": "2026-10-07T20:00:00",
+      "ends_at": "2026-10-07T21:00:00",
+      "rooms": "FRNY G140, WALC 1055",
+      "weight": 100.0
+    },
+    {
+      "id": 7,
+      "course_code": "MA 16100",
+      "course_title": "Plane Analytic Geometry and Calculus I",
+      "kind": "midterm",
+      "starts_at": "2026-10-19T20:00:00",
+      "ends_at": "2026-10-19T21:00:00",
+      "rooms": "BHEE 170, FRNY G140, PHYS 112, UC 114",
+      "weight": 100.0
+    },
+    {
+      "id": 10,
+      "course_code": "MA 16200",
+      "course_title": "Plane Analytic Geometry and Calculus II",
+      "kind": "midterm",
+      "starts_at": "2026-10-20T20:00:00",
+      "ends_at": "2026-10-20T21:00:00",
+      "rooms": "CL50 224, STEW 183",
+      "weight": 100.0
+    },
+    {
+      "id": 3,
+      "course_code": "CS 25100",
+      "course_title": "Data Structures and Algorithms",
+      "kind": "midterm",
+      "starts_at": "2026-10-29T20:00:00",
+      "ends_at": "2026-10-29T21:00:00",
+      "rooms": "CL50 224, MATH 175",
+      "weight": 100.0
+    },
+    {
+      "id": 5,
+      "course_code": "CS 30700",
+      "course_title": "Software Engineering I",
+      "kind": "midterm",
+      "starts_at": "2026-10-29T20:00:00",
+      "ends_at": "2026-10-29T21:30:00",
+      "rooms": "LILY 1105",
+      "weight": 100.0
+    },
+    {
+      "id": 11,
+      "course_code": "MA 16200",
+      "course_title": "Plane Analytic Geometry and Calculus II",
+      "kind": "midterm",
+      "starts_at": "2026-11-09T20:00:00",
+      "ends_at": "2026-11-09T21:00:00",
+      "rooms": "LILY 1105, MTHW 210, PHYS 112, WALC 1055",
+      "weight": 100.0
+    },
+    {
+      "id": 15,
+      "course_code": "MA 26500",
+      "course_title": "Linear Algebra",
+      "kind": "midterm",
+      "starts_at": "2026-11-11T20:00:00",
+      "ends_at": "2026-11-11T21:00:00",
+      "rooms": "BHEE 129, CL50 224, WTHR 200",
+      "weight": 100.0
+    },
+    {
+      "id": 17,
+      "course_code": "MA 35100",
+      "course_title": "Elementary Linear Algebra",
+      "kind": "midterm",
+      "starts_at": "2026-11-11T20:00:00",
+      "ends_at": "2026-11-11T21:00:00",
+      "rooms": "MATH 175",
+      "weight": 100.0
+    },
+    {
+      "id": 18,
+      "course_code": "MA 35100",
+      "course_title": "Elementary Linear Algebra",
+      "kind": "midterm",
+      "starts_at": "2026-11-16T20:00:00",
+      "ends_at": "2026-11-16T21:00:00",
+      "rooms": "LILY G126",
+      "weight": 100.0
+    },
+    {
+      "id": 20,
+      "course_code": "STAT 35000",
+      "course_title": "Introduction to Statistics",
+      "kind": "midterm",
+      "starts_at": "2026-11-17T20:00:00",
+      "ends_at": "2026-11-17T21:00:00",
+      "rooms": "LILY 1105, LILY G126",
+      "weight": 100.0
+    },
+    {
+      "id": 8,
+      "course_code": "MA 16100",
+      "course_title": "Plane Analytic Geometry and Calculus I",
+      "kind": "midterm",
+      "starts_at": "2026-11-18T20:00:00",
+      "ends_at": "2026-11-18T21:00:00",
+      "rooms": "PHYS 114, RHPH 172, SMTH 108, UC 114",
+      "weight": 100.0
+    },
+    {
+      "id": 13,
+      "course_code": "MA 26100",
+      "course_title": "Multivariate Calculus",
+      "kind": "midterm",
+      "starts_at": "2026-11-18T20:00:00",
+      "ends_at": "2026-11-18T21:00:00",
+      "rooms": "BHEE 129, CL50 224, FRNY G140, LILY 1105, ME 1130, MSEE B012, PHYS 112, WALC 1055, WTHR 104, WTHR 200",
+      "weight": 100.0
+    },
+    {
+      "id": 4,
+      "course_code": "CS 25100",
+      "course_title": "Data Structures and Algorithms",
+      "kind": "midterm",
+      "starts_at": "2026-11-19T20:00:00",
+      "ends_at": "2026-11-19T21:00:00",
+      "rooms": "ME 1061, ME 1130, RAWL 1086, RHPH 172",
+      "weight": 100.0
+    }
+  ],
+  "events": []
+}

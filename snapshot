@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+#
+# Freeze the database into frontend/public/snapshot.json: ./snapshot
+#
+# Run this after importing exam tables or editing enrollment figures. The
+# database itself is gitignored and regenerated, so the snapshot is what
+# actually preserves hand-entered data - and it is the file a future static
+# build would ship instead of talking to the API.
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND="$ROOT/backend"
+
+if [ ! -d "$BACKEND/.venv" ]; then
+  echo "Dependencies are not installed. Run ./dev once first." >&2
+  exit 1
+fi
+
+cd "$BACKEND"
+exec .venv/bin/python -m app.export
