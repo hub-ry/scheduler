@@ -625,3 +625,70 @@ td input {
   color: var(--warn);
   cursor: help;
 }
+
+/*
+ * Google Calendar sync.
+ *
+ * The checkbox rows carry a name, a calendar name, and a sentence of
+ * explanation, so they are a grid rather than an inline label: the box stays
+ * aligned to the first line of text however far the description wraps.
+ */
+.gsync fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem 1rem;
+  margin: 0;
+}
+
+.gsync legend {
+  padding: 0 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.gsync .checkbox {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: start;
+  padding: 0.5rem 0;
+  cursor: pointer;
+}
+
+.gsync .checkbox + .checkbox {
+  border-top: 1px solid var(--border);
+}
+
+.gsync .checkbox input {
+  margin: 0.15rem 0 0;
+  accent-color: var(--accent);
+}
+
+.gsync .checkbox code {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.gsync .checkbox .hint {
+  display: block;
+  margin-top: 0.15rem;
+}
+
+.gsync .notice ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.gsync .notice li + li {
+  margin-top: 0.25rem;
+}
+
+.gsync .actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}

@@ -3,10 +3,11 @@ import type { Slot } from './api'
 import { Courses } from './components/Courses'
 import { Events } from './components/Events'
 import { FindTime } from './components/FindTime'
+import { GoogleSync } from './components/GoogleSync'
 import { Import } from './components/Import'
 import { WeekCalendar } from './components/WeekCalendar'
 
-type Tab = 'find' | 'calendar' | 'events' | 'courses' | 'import'
+type Tab = 'find' | 'calendar' | 'events' | 'courses' | 'import' | 'google'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'find', label: 'Find a time' },
@@ -14,6 +15,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'events', label: 'Events' },
   { id: 'courses', label: 'Courses' },
   { id: 'import', label: 'Import' },
+  { id: 'google', label: 'Google Calendar' },
 ]
 
 export default function App() {
@@ -61,6 +63,7 @@ export default function App() {
       )}
       {tab === 'courses' && <Courses onChanged={invalidate} />}
       {tab === 'import' && <Import onChanged={invalidate} />}
+      {tab === 'google' && <GoogleSync />}
     </div>
   )
 }
