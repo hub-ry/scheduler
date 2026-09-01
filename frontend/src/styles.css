@@ -692,3 +692,206 @@ td input {
   gap: 0.6rem;
   margin-top: 1rem;
 }
+
+/*
+ * Month grid.
+ *
+ * Six fixed rows so paging between a five-week and a six-week month does not
+ * change the page height and make everything below it jump.
+ */
+.month-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+
+.month-title {
+  margin: 0 0 0 0.4rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+button.ghost.icon {
+  padding: 0.25rem 0.6rem;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.month-head,
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.month-dayname {
+  padding: 0.4rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.month-grid {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--border);
+  gap: 1px;
+}
+
+.month-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-height: 104px;
+  min-width: 0;
+  padding: 0.35rem 0.4rem;
+  background: var(--surface);
+}
+
+.month.is-dense .month-cell {
+  min-height: 76px;
+}
+
+.month-cell.is-outside {
+  background: var(--surface-2);
+}
+
+.month-cell.is-outside .month-date {
+  color: var(--text-faint);
+}
+
+.month-cell.is-pickable {
+  cursor: pointer;
+}
+
+.month-date {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.month-cell.is-today .month-date {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: -0.15rem 0 0 -0.15rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+}
+
+/* The preview cell is tinted so the eye lands on the day being considered
+ * before it starts reading individual event chips. */
+.month-cell.has-preview {
+  background: var(--accent-soft);
+}
+
+.month-events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.month-event {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.1rem 0.25rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+}
+
+.month-event .dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.month-event.kind-exam { color: var(--exam); }
+.month-event.kind-event { color: var(--event); }
+.month-event.kind-course { color: var(--course); }
+
+/* The proposed slot is the only filled chip on the grid, because it is the one
+ * thing on screen that does not exist yet. */
+.month-event.is-preview {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.month-event.is-preview .dot {
+  background: #fff;
+}
+
+/*
+ * Plan tab: suggestions on the left, the month they would land in on the right.
+ */
+.plan {
+  display: grid;
+  grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.plan-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.plan-main {
+  min-width: 0;
+}
+
+.plan-commit {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.plan-commit .field {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.faint.is-previewing {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.legend .proposed::before {
+  background: var(--accent);
+}
+
+button.linkish {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* One column once the month grid would be narrower than its own day columns. */
+@media (max-width: 60rem) {
+  .plan {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

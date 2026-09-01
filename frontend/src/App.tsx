@@ -2,16 +2,18 @@ import { useState } from 'react'
 import type { Slot } from './api'
 import { Courses } from './components/Courses'
 import { Events } from './components/Events'
-import { FindTime } from './components/FindTime'
 import { GoogleSync } from './components/GoogleSync'
+import { MonthView } from './components/MonthView'
+import { Plan } from './components/Plan'
 import { Import } from './components/Import'
 import { WeekCalendar } from './components/WeekCalendar'
 
-type Tab = 'find' | 'calendar' | 'events' | 'courses' | 'import' | 'google'
+type Tab = 'plan' | 'month' | 'week' | 'events' | 'courses' | 'import' | 'google'
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'find', label: 'Find a time' },
-  { id: 'calendar', label: 'Calendar' },
+  { id: 'plan', label: 'Plan' },
+  { id: 'month', label: 'Calendar' },
+  { id: 'week', label: 'Week' },
   { id: 'events', label: 'Events' },
   { id: 'courses', label: 'Courses' },
   { id: 'import', label: 'Import' },
@@ -19,7 +21,7 @@ const TABS: { id: Tab; label: string }[] = [
 ]
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>('find')
+  const [tab, setTab] = useState<Tab>('plan')
   const [proposed, setProposed] = useState<Slot | null>(null)
   // Anything that writes bumps this, so views holding fetched data refetch
   // rather than showing a stale calendar after an import or an edit.
@@ -27,9 +29,11 @@ export default function App() {
 
   const invalidate = () => setRefreshKey((key) => key + 1)
 
+  // Just records the choice. It used to switch tabs as well, back when the
+  // suggestions and the calendar were separate views; on the Plan tab the
+  // calendar is already on screen, so jumping would take it away.
   function proposeSlot(slot: Slot | null) {
     setProposed(slot)
-    if (slot) setTab('calendar')
   }
 
   return (
@@ -53,8 +57,16 @@ export default function App() {
         </nav>
       </header>
 
-      {tab === 'find' && <FindTime onProposeSlot={proposeSlot} proposed={proposed} />}
-      {tab === 'calendar' && <WeekCalendar proposed={proposed} refreshKey={refreshKey} />}
+      {tab === 'plan' && (
+        <Plan
+          onChanged={invalidate}
+          refreshKey={refreshKey}
+          proposed={proposed}
+          onProposeSlot={proposeSlot}
+        />
+      )}
+      {tab === 'month' && <MonthView refreshKey={refreshKey} />}
+      {tab === 'week' && <WeekCalendar proposed={proposed} refreshKey={refreshKey} />}
       {tab === 'events' && (
         <Events
           onChanged={invalidate}
