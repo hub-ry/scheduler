@@ -37,6 +37,7 @@ PYTHON="$BACKEND/.venv/bin/python"
 run "backend tests"    "$PYTHON" -m pytest -q --rootdir "$BACKEND" "$BACKEND/tests"
 run "backend lint"     "$BACKEND/.venv/bin/ruff" check "$BACKEND"
 run "backend format"   "$BACKEND/.venv/bin/ruff" format --check "$BACKEND/app" "$BACKEND/tests"
+run "frontend tests"   npm --prefix "$FRONTEND" run test
 run "frontend build"   npm --prefix "$FRONTEND" run build
 run "frontend lint"    npx --prefix "$FRONTEND" eslint "$FRONTEND/src"
 
