@@ -10,6 +10,28 @@
     "the ranking sharpens considerably."
   ],
   "term": { "season": "Fall", "year": 2026, "campus": "PWL" },
+  "packages": [
+    {
+      "name": "All target courses",
+      "description": "Every gateway course. The right default when the event is open to campus.",
+      "courses": ["MA 16100", "MA 16200", "MA 26100", "MA 26500", "MA 35100", "STAT 35000", "CS 25100", "CS 30700", "CS 25000"]
+    },
+    {
+      "name": "CS club",
+      "description": "CS majors and the maths they are taking alongside it.",
+      "courses": ["CS 25100", "CS 25000", "CS 30700", "MA 26500", "MA 35100"]
+    },
+    {
+      "name": "Underclassmen",
+      "description": "First and second years, before anyone has specialised.",
+      "courses": ["MA 16100", "MA 16200", "MA 26100", "CS 25000", "CS 25100"]
+    },
+    {
+      "name": "Stats and data",
+      "description": "The statistics and linear-algebra crowd.",
+      "courses": ["STAT 35000", "MA 26500", "MA 35100"]
+    }
+  ],
   "courses": [
     { "code": "MA 16100",   "short": "MA 161",  "title": "Plane Analytic Geometry and Calculus I",  "enrollment": null },
     { "code": "MA 16200",   "short": "MA 162",  "title": "Plane Analytic Geometry and Calculus II", "enrollment": null },

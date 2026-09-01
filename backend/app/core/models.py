@@ -51,6 +51,13 @@ class Term(SQLModel, table=True):
     courses: list["Course"] = Relationship(back_populates="term")
 
 
+class PackageCourse(SQLModel, table=True):
+    """Membership of a course in a package. A plain many-to-many link table."""
+
+    package_id: int = Field(foreign_key="package.id", primary_key=True)
+    course_id: int = Field(foreign_key="course.id", primary_key=True)
+
+
 class Course(SQLModel, table=True):
     """A class that competes for our audience's time.
 
@@ -80,6 +87,7 @@ class Course(SQLModel, table=True):
         back_populates="course",
         sa_relationship_kwargs={"cascade": "all, delete-orphan"},
     )
+    packages: list["Package"] = Relationship(back_populates="courses", link_model=PackageCourse)
 
     @property
     def weight(self) -> float:
@@ -91,6 +99,26 @@ class Course(SQLModel, table=True):
     def has_measured_enrollment(self) -> bool:
         """Lets the UI flag rankings that rest on placeholder weights."""
         return self.enrollment is not None
+
+
+class Package(SQLModel, table=True):
+    """A named audience: the courses whose students you are recruiting.
+
+    Different events chase different rooms. A CS club's callout competes with
+    CS 251 and the calculus sequence; a stats reading group does not care about
+    either. Ranking against every target course at once averages those audiences
+    together and quietly mis-ranks both.
+
+    A package is that choice, saved. Courses belong to as many packages as make
+    sense - the calculus sequence is in nearly all of them - so this is a
+    many-to-many rather than a column on Course.
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(index=True)
+    description: str = ""
+
+    courses: list["Course"] = Relationship(back_populates="packages", link_model=PackageCourse)
 
 
 class CourseMeeting(SQLModel, table=True):

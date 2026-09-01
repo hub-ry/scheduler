@@ -1,4 +1,4 @@
-import type { RankRequest, Weekday } from '../api'
+import type { Package, RankRequest, Weekday } from '../api'
 import { DAY_NAMES } from '../dates'
 
 /**
@@ -13,11 +13,20 @@ interface Props {
   onChange: (request: RankRequest) => void
   onSubmit: (event: React.FormEvent) => void
   loading: boolean
+  packages?: Package[]
   title?: string
   hint?: string
 }
 
-export function SlotSearchForm({ request, onChange, onSubmit, loading, title, hint }: Props) {
+export function SlotSearchForm({
+  request,
+  onChange,
+  onSubmit,
+  loading,
+  packages = [],
+  title,
+  hint,
+}: Props) {
   function set<K extends keyof RankRequest>(key: K, value: RankRequest[K]) {
     onChange({ ...request, [key]: value })
   }
@@ -33,10 +42,49 @@ export function SlotSearchForm({ request, onChange, onSubmit, loading, title, hi
     )
   }
 
+  // Match by membership rather than storing an id: the request only ever
+  // carries course ids, so a package edited elsewhere stops matching, which is
+  // the honest thing to show rather than a stale name.
+  const selected = request.course_ids
+  const currentPackage =
+    selected == null
+      ? undefined
+      : packages.find(
+          (option) =>
+            option.course_ids.length === selected.length &&
+            option.course_ids.every((id) => selected.includes(id)),
+        )
+  const currentPackageId = currentPackage?.id
+
   return (
       <form className="card" onSubmit={onSubmit}>
         <h2>{title ?? 'Find a time'}</h2>
         <p className="hint">{hint ?? 'Ranked by how little of your audience is already busy.'}</p>
+
+        {packages.length > 0 && (
+          <div className="field">
+            <label htmlFor="audience">Audience</label>
+            <select
+              id="audience"
+              value={currentPackageId ?? ''}
+              onChange={(e) => {
+                const chosen = packages.find((p) => String(p.id) === e.target.value)
+                set('course_ids', chosen ? chosen.course_ids : null)
+              }}
+            >
+              <option value="">Everyone (all tracked courses)</option>
+              {packages.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.name} ({option.course_codes.length})
+                </option>
+              ))}
+            </select>
+            <span className="hint">
+              {currentPackage?.description ??
+                'Only the chosen courses\u2019 exams count against a slot.'}
+            </span>
+          </div>
+        )}
 
         <div className="field-row">
           <div className="field">

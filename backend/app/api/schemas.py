@@ -32,6 +32,26 @@ class CourseUpdate(BaseModel):
     title: str | None = None
 
 
+class PackageOut(BaseModel):
+    id: int
+    name: str
+    description: str
+    course_ids: list[int]
+    course_codes: list[str]
+
+
+class PackageIn(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    description: str = ""
+    course_ids: list[int] = []
+
+
+class PackageUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=80)
+    description: str | None = None
+    course_ids: list[int] | None = None
+
+
 class ExamOut(BaseModel):
     id: int
     course_code: str
@@ -101,6 +121,10 @@ class RankRequest(BaseModel):
     )
     step_minutes: int = Field(default=30, ge=5, le=120)
     limit: int = Field(default=10, ge=1, le=200)
+    #: Restrict the audience to these courses. ``None`` means every tracked
+    #: course, which is the right default but the wrong answer for a club whose
+    #: people all sit in one department.
+    course_ids: list[int] | None = None
 
     @model_validator(mode="after")
     def _validate_window(self):

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   api,
   ApiError,
+  type Package,
   type RankRequest,
   type RankResponse,
   type Slot,
@@ -69,6 +70,12 @@ export function Plan({ onChanged, refreshKey, proposed, onProposeSlot }: Props) 
   const days = monthGrid(month)
   const from = toDateInput(days[0])
   const to = toDateInput(addDays(days[days.length - 1], 1))
+  const { data: packages } = useAsyncData<Package[]>(
+    api.packages,
+    `packages:${refreshKey}`,
+    [],
+  )
+
   const { data: blocks } = useAsyncData(
     () => api.busy(`${from}T00:00:00`, `${to}T00:00:00`),
     `${from}:${refreshKey}`,
@@ -151,6 +158,7 @@ export function Plan({ onChanged, refreshKey, proposed, onProposeSlot }: Props) 
           onChange={setRequest}
           onSubmit={search}
           loading={loading}
+          packages={packages}
           title="What are you scheduling?"
         />
         <SlotList

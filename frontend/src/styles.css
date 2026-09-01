@@ -895,3 +895,112 @@ button.linkish {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/*
+ * Course packages.
+ *
+ * The bar reads as a row of filters rather than a list, because picking one is
+ * the common action and editing it is the rare one.
+ */
+.packages {
+  margin: 0.5rem 0 1rem;
+}
+
+.packages-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.packages-bar > strong {
+  margin-right: 0.2rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.pkg {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.pkg > button {
+  padding: 0.25rem 0.7rem;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font-size: 0.82rem;
+}
+
+.pkg .count {
+  margin-left: 0.3rem;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.pkg.is-editing {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.pkg.is-editing > button {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Kept quiet until hover: deleting a package is not the point of the chip. */
+.pkg-remove {
+  padding: 0.25rem 0.5rem 0.25rem 0.2rem;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--text-faint);
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.pkg-remove:hover {
+  color: var(--bad);
+  background: var(--bad-soft);
+}
+
+.packages-editor {
+  margin-top: 0.75rem;
+  padding: 0.85rem 1rem 1rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+}
+
+.packages-editor .field {
+  max-width: 22rem;
+}
+
+.packages-editor .actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+th.tick,
+td.tick {
+  width: 2.2rem;
+  text-align: center;
+}
+
+td.tick input {
+  accent-color: var(--accent);
+}
+
+tr.is-member {
+  background: var(--accent-soft);
+}
+
+td.small {
+  font-size: 0.78rem;
+}

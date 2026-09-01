@@ -1,12 +1,94 @@
 {
-  "schema_version": 1,
-  "generated_at": "2026-09-01T15:42:16",
+  "schema_version": 2,
+  "generated_at": "2026-09-01T18:27:53",
   "terms": [
     {
       "id": 1,
       "name": "Fall 2026",
       "start_date": "2026-08-24",
       "end_date": "2026-12-12"
+    }
+  ],
+  "packages": [
+    {
+      "id": 1,
+      "name": "All target courses",
+      "description": "Every gateway course. The right default when the event is open to campus.",
+      "course_ids": [
+        9,
+        7,
+        8,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "course_codes": [
+        "CS 25000",
+        "CS 25100",
+        "CS 30700",
+        "MA 16100",
+        "MA 16200",
+        "MA 26100",
+        "MA 26500",
+        "MA 35100",
+        "STAT 35000"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "CS club",
+      "description": "CS majors and the maths they are taking alongside it.",
+      "course_ids": [
+        9,
+        7,
+        8,
+        4,
+        5
+      ],
+      "course_codes": [
+        "CS 25000",
+        "CS 25100",
+        "CS 30700",
+        "MA 26500",
+        "MA 35100"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Stats and data",
+      "description": "The statistics and linear-algebra crowd.",
+      "course_ids": [
+        4,
+        5,
+        6
+      ],
+      "course_codes": [
+        "MA 26500",
+        "MA 35100",
+        "STAT 35000"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Underclassmen",
+      "description": "First and second years, before anyone has specialised.",
+      "course_ids": [
+        9,
+        7,
+        1,
+        2,
+        3
+      ],
+      "course_codes": [
+        "CS 25000",
+        "CS 25100",
+        "MA 16100",
+        "MA 16200",
+        "MA 26100"
+      ]
     }
   ],
   "courses": [

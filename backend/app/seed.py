@@ -16,7 +16,7 @@ from pathlib import Path
 
 from sqlmodel import Session, select
 
-from app.core.models import Course, Exam, Term
+from app.core.models import Course, Exam, Package, Term
 from app.core.registrar import parse_exam_table
 from app.db import create_db_and_tables, engine
 
@@ -84,12 +84,31 @@ def seed(session: Session) -> dict[str, int]:
         )
     session.commit()
 
+    _seed_packages(session, config, courses)
+
     return {
         "courses": len(courses),
         "exams_parsed": len(parsed),
         "exams_loaded": len(relevant),
         "courses_without_enrollment": sum(1 for c in courses.values() if c.enrollment is None),
     }
+
+
+def _seed_packages(session: Session, config: dict, courses: dict[str, Course]) -> None:
+    """Create the packages declared in the config, without clobbering edits.
+
+    Membership is only filled in when a package is first created. Someone who
+    removes a course from a package in the UI means it, and a re-seed that put
+    it back would look like the app undoing their work.
+    """
+    for spec in config.get("packages", []):
+        existing = session.exec(select(Package).where(Package.name == spec["name"])).first()
+        if existing is not None:
+            continue
+        package = Package(name=spec["name"], description=spec.get("description", ""))
+        package.courses = [courses[code] for code in spec["courses"] if code in courses]
+        session.add(package)
+    session.commit()
 
 
 def main() -> None:

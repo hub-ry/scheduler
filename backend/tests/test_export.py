@@ -18,6 +18,7 @@ def test_snapshot_carries_the_seeded_data(seeded):
     assert snapshot["courses"], "seeded database should have target courses"
     assert snapshot["exams"], "seeded database should have exam sittings"
     assert snapshot["terms"], "exams are meaningless without the term that bounds them"
+    assert snapshot["packages"], "the seeded audiences should travel with the data"
 
 
 def test_snapshot_matches_what_the_api_serves(client, seeded):
@@ -28,6 +29,7 @@ def test_snapshot_matches_what_the_api_serves(client, seeded):
         ("courses", "/api/courses"),
         ("exams", "/api/exams"),
         ("events", "/api/events"),
+        ("packages", "/api/packages"),
     ]:
         assert snapshot[key] == client.get(path).json(), f"{key} drifted from {path}"
 

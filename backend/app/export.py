@@ -29,7 +29,7 @@ from typing import Any
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
-from app.api.routes import list_courses, list_events, list_exams
+from app.api.routes import list_courses, list_events, list_exams, list_packages
 from app.db import engine
 
 #: Where the frontend can pick it up. Vite serves ``public/`` at the site root,
@@ -38,7 +38,7 @@ DEFAULT_OUTPUT = Path(__file__).resolve().parents[2] / "frontend" / "public" / "
 
 #: Bumped when the shape changes, so a stale committed snapshot fails loudly on
 #: load rather than rendering a half-empty calendar.
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 def build_snapshot(session: Session) -> dict[str, Any]:
@@ -65,6 +65,7 @@ def build_snapshot(session: Session) -> dict[str, Any]:
             }
             for t in terms
         ],
+        "packages": [_dump(p) for p in list_packages(session)],
         "courses": [_dump(c) for c in list_courses(session)],
         "exams": [_dump(e) for e in list_exams(session)],
         "events": [_dump(e) for e in list_events(session)],

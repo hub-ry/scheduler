@@ -44,6 +44,14 @@ export interface ClubEvent {
   weight: number
 }
 
+export interface Package {
+  id: number
+  name: string
+  description: string
+  course_ids: number[]
+  course_codes: string[]
+}
+
 export interface Busy {
   start: string
   end: string
@@ -85,6 +93,8 @@ export interface RankRequest {
   weekdays: Weekday[]
   step_minutes: number
   limit: number
+  /** Narrow the audience to these courses. Omitted means every tracked course. */
+  course_ids?: number[] | null
 }
 
 export interface ImportResponse {
@@ -148,6 +158,16 @@ export const api = {
     request<Course>(`/api/courses/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
 
   exams: () => request<Exam[]>('/api/exams'),
+
+  packages: () => request<Package[]>('/api/packages'),
+
+  createPackage: (body: { name: string; description?: string; course_ids: number[] }) =>
+    request<Package>('/api/packages', { method: 'POST', body: JSON.stringify(body) }),
+
+  updatePackage: (id: number, patch: Partial<{ name: string; description: string; course_ids: number[] }>) =>
+    request<Package>(`/api/packages/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+
+  deletePackage: (id: number) => request<void>(`/api/packages/${id}`, { method: 'DELETE' }),
 
   events: () => request<ClubEvent[]>('/api/events'),
 

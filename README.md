@@ -48,6 +48,8 @@ are the recruiting audience:
 
 MA 161, MA 162, MA 261, MA 265, MA 351, STAT 350, CS 251, CS 307.
 
+It also declares the starter packages - the named audiences described above.
+
 Only exams for those courses are loaded; a 500-level midterm does not compete
 for underclassmen and would only add noise.
 
@@ -72,6 +74,28 @@ Requires `uv` and `npm` (`brew install uv node`). Override the ports with
 `API_PORT=8001 WEB_PORT=5174 ./dev`.
 
 To reseed from scratch, delete `backend/scheduler.db` and run `./dev` again.
+
+## Packages
+
+A package is a named audience: the courses whose students you are actually
+recruiting. Different events chase different rooms - a CS callout competes with
+CS 251 and the calculus sequence, a stats reading group with neither - and
+ranking every event against every tracked course averages those audiences
+together and mis-ranks both.
+
+Pick one from **Audience** on the Plan tab and only those courses' exams count
+against a slot. Build and edit them on the **Courses** tab: the chips across the
+top are the packages, clicking one turns the table into a checklist of its
+members.
+
+Competing club events are deliberately *not* filtered by the package. A package
+says whose calendar we are reasoning about; another org's callout competes for
+those people whatever they happen to be enrolled in.
+
+Four ship in `data/target_courses.json` - all target courses, CS club,
+underclassmen, stats and data. Seeding only creates a package that does not
+exist yet and never rewrites the membership of one that does, because someone
+who removes a course from a package means it.
 
 ## Pushing to Google Calendar
 
@@ -139,6 +163,22 @@ an upsert rather than an append:
 sight, because it is the part that can silently corrupt a real calendar, and
 `gcal.test.ts` covers it. The network half is `gcalClient.ts`.
 
+## The Plan tab
+
+Suggesting a time, seeing it in place, and committing it are one screen. The
+question that matters - what does the month look like if I take this slot - was
+previously something you held in your head while switching tabs.
+
+Hovering a suggestion draws it into the month grid among everything it would
+compete with, so comparing two options costs a pointer movement. Hover only
+previews; clicking chooses; nothing is written until **Book it**, which saves
+the event and pushes it to Google in one action.
+
+The month grid is ours rather than Google's embed iframe. The embed can only
+render calendars that have been made public, and it is a sealed frame nothing
+can be drawn into - so it could not host the preview overlay, which is the
+entire point of the view.
+
 ## Snapshots
 
 ```bash
@@ -184,19 +224,20 @@ sections into their in-person course.
 
 ```
 backend/
-  app/core/models.py       Course, CourseMeeting, Exam, ClubEvent, Term
+  app/core/models.py       Course, CourseMeeting, Exam, ClubEvent, Term, Package
   app/core/scheduling.py   Slot ranking - pure functions, no database
   app/core/registrar.py    Parser for the exam schedule tables
   app/api/                 FastAPI routes and wire schemas
   app/seed.py              Loads data/ into SQLite, idempotently
   app/export.py            Freezes the database into snapshot.json
   data/                    Registrar tables and the target course list
-  tests/                   70 tests, run against the real data files
+  tests/                   80 tests, run against the real data files
 frontend/
   src/api.ts               Typed client - the one place the backend is reached
   src/gcal.ts              Domain rows to Google events; pure, tested
   src/gcalClient.ts        OAuth and the Calendar REST calls
-  src/components/          FindTime, WeekCalendar, Events, Courses, Import,
+  src/components/          Plan, MonthCalendar, MonthView, WeekCalendar,
+                           SlotSearchForm, SlotList, Events, Courses, Import,
                            GoogleSync
 ```
 

@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
 from app.api import schemas
-from app.core.models import ClubEvent, Course, Exam, Term
+from app.core.models import ClubEvent, Course, Exam, Package, Term
 from app.core.registrar import parse_exam_table
 from app.core.scheduling import (
     BusyInterval,
@@ -41,14 +41,26 @@ def _exam_interval(exam: Exam, course: Course) -> BusyInterval:
 
 
 def _collect_busy(
-    session: Session, window_start: datetime, window_end: datetime
+    session: Session,
+    window_start: datetime,
+    window_end: datetime,
+    course_ids: set[int] | None = None,
 ) -> tuple[list[BusyInterval], list[str]]:
     """Every weighted busy block in the window, plus the courses still guessing.
 
     The second return value is what lets the UI say "this ranking rests on
     placeholder numbers" instead of implying the figures are measured.
+
+    ``course_ids`` narrows the audience to one package's courses. Competing club
+    events are deliberately not filtered by it: a package says whose calendar we
+    are reasoning about, and another org's callout competes for those people
+    whatever they are enrolled in.
     """
-    courses = {c.id: c for c in session.exec(select(Course)).all()}
+    courses = {
+        c.id: c
+        for c in session.exec(select(Course)).all()
+        if course_ids is None or c.id in course_ids
+    }
     term = session.exec(select(Term)).first()
 
     intervals: list[BusyInterval] = []
@@ -134,6 +146,76 @@ def update_course(course_id: int, payload: schemas.CourseUpdate, session: Sessio
     )
 
 
+def _package_out(package: Package) -> schemas.PackageOut:
+    courses = sorted(package.courses, key=lambda c: c.code)
+    return schemas.PackageOut(
+        id=package.id,
+        name=package.name,
+        description=package.description,
+        course_ids=[c.id for c in courses],
+        course_codes=[c.code for c in courses],
+    )
+
+
+def _resolve_courses(session: Session, course_ids: list[int]) -> list[Course]:
+    """Look up every id, refusing the whole request if one is unknown.
+
+    Partial success would silently drop a course from someone's audience and
+    quietly change their ranking, which is worse than a 404 they can act on.
+    """
+    courses = []
+    for course_id in dict.fromkeys(course_ids):
+        course = session.get(Course, course_id)
+        if course is None:
+            raise HTTPException(404, f"no course with id {course_id}")
+        courses.append(course)
+    return courses
+
+
+@router.get("/packages", response_model=list[schemas.PackageOut])
+def list_packages(session: SessionDep):
+    packages = session.exec(select(Package).order_by(Package.name)).all()
+    return [_package_out(p) for p in packages]
+
+
+@router.post("/packages", response_model=schemas.PackageOut, status_code=201)
+def create_package(payload: schemas.PackageIn, session: SessionDep):
+    package = Package(name=payload.name, description=payload.description)
+    package.courses = _resolve_courses(session, payload.course_ids)
+    session.add(package)
+    session.commit()
+    session.refresh(package)
+    return _package_out(package)
+
+
+@router.patch("/packages/{package_id}", response_model=schemas.PackageOut)
+def update_package(package_id: int, payload: schemas.PackageUpdate, session: SessionDep):
+    package = session.get(Package, package_id)
+    if package is None:
+        raise HTTPException(404, "package not found")
+    if payload.name is not None:
+        package.name = payload.name
+    if payload.description is not None:
+        package.description = payload.description
+    if payload.course_ids is not None:
+        package.courses = _resolve_courses(session, payload.course_ids)
+    session.add(package)
+    session.commit()
+    session.refresh(package)
+    return _package_out(package)
+
+
+@router.delete("/packages/{package_id}", status_code=204)
+def delete_package(package_id: int, session: SessionDep):
+    package = session.get(Package, package_id)
+    if package is None:
+        raise HTTPException(404, "package not found")
+    # Only the grouping goes; the courses themselves belong to the term, not to
+    # whoever happened to file them under one audience.
+    session.delete(package)
+    session.commit()
+
+
 @router.get("/exams", response_model=list[schemas.ExamOut])
 def list_exams(session: SessionDep):
     exams = session.exec(select(Exam).order_by(Exam.starts_at)).all()
@@ -195,7 +277,12 @@ def rank(payload: schemas.RankRequest, session: SessionDep):
     window_start = datetime.combine(payload.window_start, time.min)
     window_end = datetime.combine(payload.window_end, time.max)
 
-    intervals, missing = _collect_busy(session, window_start, window_end)
+    intervals, missing = _collect_busy(
+        session,
+        window_start,
+        window_end,
+        set(payload.course_ids) if payload.course_ids is not None else None,
+    )
     constraints = SlotConstraints(
         duration=timedelta(minutes=payload.duration_minutes),
         earliest=payload.earliest,
