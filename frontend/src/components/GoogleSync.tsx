@@ -1,7 +1,14 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { api, ApiError, type ClubEvent, type Exam } from '../api'
 import { CALENDARS, clubEventToEvent, examToEvent, type GcalEvent, type Target } from '../gcal'
-import { applyPlan, CLIENT_ID, planTarget, requestAccessToken, type TargetPlan } from '../gcalClient'
+import {
+  applyPlan,
+  CLIENT_ID,
+  GoogleError,
+  planTarget,
+  requestAccessToken,
+  type TargetPlan,
+} from '../gcalClient'
 
 /**
  * Push the busy landscape out to Google Calendar.
@@ -61,6 +68,27 @@ export function GoogleSync() {
   const [done, setDone] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // Held from the preview so Apply does not put a second account chooser in
+  // front of someone who authorised ten seconds ago. Tokens last about an hour,
+  // which comfortably outlives the gap between previewing and applying.
+  const token = useRef<string | null>(null)
+
+  /**
+   * Reuse the token we already have, and re-prompt only when Google actually
+   * rejects it. Asking pre-emptively is what made Apply feel broken.
+   */
+  async function withToken<T>(run: (token: string) => Promise<T>): Promise<T> {
+    if (token.current) {
+      try {
+        return await run(token.current)
+      } catch (caught) {
+        if (!(caught instanceof GoogleError) || caught.status !== 401) throw caught
+        token.current = null
+      }
+    }
+    token.current = await requestAccessToken()
+    return run(token.current)
+  }
 
   function toggle(target: Target) {
     setSelected((current) => {
@@ -84,13 +112,15 @@ export function GoogleSync() {
     setDone(null)
     setPlans(null)
     try {
-      const token = await requestAccessToken()
       const chosen = TARGETS.filter((target) => selected.has(target.id))
-      const computed: TargetPlan[] = []
-      for (const target of chosen) {
-        setProgress(`Checking ${target.label.toLowerCase()}…`)
-        computed.push(await planTarget(token, target.id, await collect(target.id)))
-      }
+      const computed = await withToken(async (granted) => {
+        const plans: TargetPlan[] = []
+        for (const target of chosen) {
+          setProgress(`Checking ${target.label.toLowerCase()}…`)
+          plans.push(await planTarget(granted, target.id, await collect(target.id)))
+        }
+        return plans
+      })
       setPlans(computed)
     } catch (caught) {
       setError(describe(caught))
@@ -105,14 +135,13 @@ export function GoogleSync() {
     setBusy(true)
     setError(null)
     try {
-      // A fresh token: the preview may have been sitting on screen a while, and
-      // an expired token would otherwise fail on the first write.
-      const token = await requestAccessToken()
-      for (const plan of plans) {
-        await applyPlan(token, plan, (count, total) =>
-          setProgress(`Writing ${plan.target} - ${count} of ${total}…`),
-        )
-      }
+      await withToken(async (granted) => {
+        for (const plan of plans) {
+          await applyPlan(granted, plan, (count, total) =>
+            setProgress(`Writing ${plan.target} - ${count} of ${total}…`),
+          )
+        }
+      })
       const written = plans.reduce((total, plan) => total + plan.writes, 0)
       setDone(
         written === 0
