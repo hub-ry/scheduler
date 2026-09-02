@@ -29,7 +29,11 @@ RestartSec=5
 
 # Only bound to localhost, because cloudflared is what faces the internet.
 # Nothing should be able to reach this port from outside the machine.
-Environment=PORT=8000
+#
+# 8010 rather than 8000: a Docker container already publishes 8000 on this box,
+# and docker-proxy binds 0.0.0.0, so it would win the port and the clash would
+# only show up as a bind error at start.
+Environment=PORT=8010
 Environment=HOST=127.0.0.1
 
 # Modest hardening. The service needs its own directory and nothing else.

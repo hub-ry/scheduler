@@ -65,7 +65,7 @@ world-readable and this one is committed.
 sudo cp /opt/scheduler/deploy/scheduler.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now scheduler
-curl localhost:8000/health          # {"status":"ok"}
+curl localhost:8010/health          # {"status":"ok"}
 ```
 
 ### 4. Tunnel

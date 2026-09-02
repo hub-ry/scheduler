@@ -9,7 +9,7 @@ credentials-file: /etc/cloudflared/scheduler.json
 
 ingress:
   - hostname: scheduler.ryhub.dev
-    service: http://127.0.0.1:8000
+    service: http://127.0.0.1:8010
   # Every tunnel config needs a terminal catch-all or cloudflared refuses to
   # start.
   - service: http_status:404
