@@ -30,7 +30,8 @@ interface Props {
 export function CalendarTab({ refreshKey, onChanged }: Props) {
   const [span, setSpan] = useState<Span>(1)
   const [anchor, setAnchor] = useState(() => startOfMonth(new Date()))
-  const [adding, setAdding] = useState<Date | null>(null)
+  // `true` means opened by the button with no day in mind.
+  const [adding, setAdding] = useState<Date | true | null>(null)
 
   const months = useMemo(
     () => Array.from({ length: span }, (_, index) => addMonths(anchor, index)),
@@ -89,14 +90,21 @@ export function CalendarTab({ refreshKey, onChanged }: Props) {
         <span className="faint">
           {loading ? 'Loading…' : `${inRange.length} event${inRange.length === 1 ? '' : 's'}`}
         </span>
+        <button className="ghost" type="button" onClick={() => setAdding(true)} disabled={!!adding}>
+          + Competing event
+        </button>
       </MonthToolbar>
 
       {error && <div className="notice error">{error}</div>}
 
       {adding ? (
-        <QuickAddEvent day={adding} onClose={() => setAdding(null)} onAdded={onChanged} />
+        <QuickAddEvent
+          day={adding === true ? undefined : adding}
+          onClose={() => setAdding(null)}
+          onAdded={onChanged}
+        />
       ) : (
-        <p className="hint">Click a day to add a competing event.</p>
+        <p className="hint">Click a day to log a competing event on it.</p>
       )}
 
       <div className={`month-stack span-${span}`}>

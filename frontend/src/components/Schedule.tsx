@@ -15,6 +15,7 @@ import { clubEventToEvent } from '../gcal'
 import { applyPlan, GoogleError, planTarget, requestAccessToken } from '../gcalClient'
 import { useAsyncData } from '../useAsyncData'
 import { MonthCalendar, MonthToolbar } from './MonthCalendar'
+import { QuickAddEvent } from './QuickAddEvent'
 import { SlotList } from './SlotList'
 import { SlotSearchForm } from './SlotSearchForm'
 
@@ -66,6 +67,7 @@ export function Schedule({ onChanged, refreshKey }: Props) {
 
   const [hovered, setHovered] = useState<Slot | null>(null)
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
+  const [addingCompeting, setAddingCompeting] = useState(false)
 
   // Which idea this booking is for. The board is the list of things we intend
   // to run, so scheduling one should tick it off there rather than creating an
@@ -210,7 +212,19 @@ export function Schedule({ onChanged, refreshKey }: Props) {
           ) : (
             <span className="faint">Hover a suggestion to see it here</span>
           )}
+          <button
+            className="ghost"
+            type="button"
+            onClick={() => setAddingCompeting(true)}
+            disabled={addingCompeting}
+          >
+            + Competing event
+          </button>
         </MonthToolbar>
+
+        {addingCompeting && (
+          <QuickAddEvent onClose={() => setAddingCompeting(false)} onAdded={onChanged} />
+        )}
 
         <MonthCalendar
           month={month}
@@ -245,7 +259,7 @@ export function Schedule({ onChanged, refreshKey }: Props) {
             <select
               id="event-idea"
               value={ideaId}
-              disabled={!proposed || pushing}
+              disabled={pushing}
               onChange={(event) =>
                 setIdeaId(event.target.value === '' ? '' : Number(event.target.value))
               }
@@ -267,7 +281,7 @@ export function Schedule({ onChanged, refreshKey }: Props) {
                 value={title}
                 placeholder="Callout #2"
                 onChange={(event) => setTitle(event.target.value)}
-                disabled={!proposed || pushing}
+                disabled={pushing}
               />
             </div>
           )}

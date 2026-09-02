@@ -1,23 +1,29 @@
 import { useState } from 'react'
 import { api, ApiError } from '../api'
-import { formatDay, toDateInput } from '../dates'
+import { toDateInput } from '../dates'
 
 /**
- * Add a competing event to a day you clicked.
+ * Log a competing event: another org's thing that will take your audience.
  *
- * Everything here is already decided except the name and the time, so the form
- * is three fields rather than the full event editor. The day came from the
- * click; the duration is almost always an hour; the audience fraction and
- * expected attendance are things nobody has ever filled in on this screen.
+ * Opened by a button rather than by clicking a day, because on the Schedule tab
+ * the grid already owns the drag gesture for the search window and a click that
+ * sometimes meant "add an event" and sometimes meant "start a range" would
+ * misfire on every short drag. Clicking a day where nothing else claims the
+ * gesture just prefills the date.
+ *
+ * Four fields, not the full event editor: expected attendance and audience
+ * fraction exist on the model but nobody has ever filled them in here.
  */
 
 interface Props {
-  day: Date
+  /** Prefills the date, when the form was opened from a specific day. */
+  day?: Date
   onClose: () => void
   onAdded: () => void
 }
 
 export function QuickAddEvent({ day, onClose, onAdded }: Props) {
+  const [date, setDate] = useState(() => toDateInput(day ?? new Date()))
   const [title, setTitle] = useState('')
   const [organization, setOrganization] = useState('')
   const [start, setStart] = useState('19:00')
@@ -34,9 +40,8 @@ export function QuickAddEvent({ day, onClose, onAdded }: Props) {
     setBusy(true)
     setError(null)
     try {
-      const date = toDateInput(day)
       const [hours, mins] = start.split(':').map(Number)
-      const startsAt = new Date(day)
+      const startsAt = new Date(`${date}T00:00:00`)
       startsAt.setHours(hours, mins, 0, 0)
       const endsAt = new Date(startsAt.getTime() + minutes * 60_000)
 
@@ -68,7 +73,7 @@ export function QuickAddEvent({ day, onClose, onAdded }: Props) {
   return (
     <form className="quick-add" onSubmit={submit}>
       <div className="quick-add-head">
-        <strong>{formatDay(day)}</strong>
+        <strong>Competing event</strong>
         <button type="button" className="ghost icon" aria-label="Cancel" onClick={onClose}>
           ×
         </button>
@@ -100,6 +105,16 @@ export function QuickAddEvent({ day, onClose, onAdded }: Props) {
       </div>
 
       <div className="field-row">
+        <div className="field">
+          <label htmlFor="qa-date">Date</label>
+          <input
+            id="qa-date"
+            type="date"
+            value={date}
+            disabled={busy}
+            onChange={(event) => setDate(event.target.value)}
+          />
+        </div>
         <div className="field">
           <label htmlFor="qa-start">Starts</label>
           <input
