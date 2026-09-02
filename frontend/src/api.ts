@@ -54,6 +54,15 @@ export interface Package {
   course_codes: string[]
 }
 
+export interface Idea {
+  id: number
+  title: string
+  notes: string
+  position: number
+  event_id: number | null
+  scheduled_for: string | null
+}
+
 export interface Busy {
   start: string
   end: string
@@ -162,6 +171,19 @@ export const api = {
   exams: () => request<Exam[]>('/api/exams'),
 
   packages: () => request<Package[]>('/api/packages'),
+
+  ideas: () => request<Idea[]>('/api/ideas'),
+
+  createIdea: (body: { title: string; notes?: string }) =>
+    request<Idea>('/api/ideas', { method: 'POST', body: JSON.stringify(body) }),
+
+  updateIdea: (id: number, patch: Partial<{ title: string; notes: string; event_id: number | null }>) =>
+    request<Idea>(`/api/ideas/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+
+  deleteIdea: (id: number) => request<void>(`/api/ideas/${id}`, { method: 'DELETE' }),
+
+  reorderIdeas: (ids: number[]) =>
+    request<Idea[]>('/api/ideas/reorder', { method: 'POST', body: JSON.stringify({ ids }) }),
 
   createPackage: (body: { name: string; description?: string; course_ids: number[] }) =>
     request<Package>('/api/packages', { method: 'POST', body: JSON.stringify(body) }),

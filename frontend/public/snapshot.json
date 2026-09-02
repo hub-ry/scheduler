@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-09-02T00:19:26",
+  "generated_at": "2026-09-02T00:24:41",
   "terms": [
     {
       "id": 1,
@@ -40,20 +40,28 @@
     {
       "id": 1,
       "name": "CS",
-      "description": "CS majors and the maths they take alongside it. The default audience.",
+      "description": "The default audience: everything a CS student actually sits, which is the CS courses plus the maths and stats they take alongside them.",
       "course_ids": [
         9,
         7,
         8,
+        1,
+        2,
+        3,
         4,
-        5
+        5,
+        6
       ],
       "course_codes": [
         "CS 25000",
         "CS 25100",
         "CS 30700",
+        "MA 16100",
+        "MA 16200",
+        "MA 26100",
         "MA 26500",
-        "MA 35100"
+        "MA 35100",
+        "STAT 35000"
       ]
     }
   ],

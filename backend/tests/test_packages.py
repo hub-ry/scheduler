@@ -16,8 +16,10 @@ def test_seed_creates_the_declared_packages(client):
 
 def test_a_package_carries_its_courses(client):
     cs = next(p for p in client.get("/api/packages").json() if p["name"] == "CS")
+    # CS currently covers every tracked course: a CS student sits the maths and
+    # the stats too. It is the default audience rather than a narrow one.
     assert "CS 25100" in cs["course_codes"]
-    assert "STAT 35000" not in cs["course_codes"]
+    assert "STAT 35000" in cs["course_codes"]
     assert len(cs["course_ids"]) == len(cs["course_codes"])
 
 
@@ -38,14 +40,21 @@ def test_reseeding_does_not_undo_an_edit(seeded, client):
 def test_ranking_scoped_to_a_package_ignores_other_courses(client):
     """The point of the feature: a stats exam must not sink a CS club's slot.
 
-    STAT 35000 sits at 8pm on Wednesday 7 October 2026 and is not in the CS
-    club package, so that exact hour is contested for the campus-wide audience
-    and free for the CS one. Pinned to the one slot rather than compared across
-    a whole term, because the ranker returns best-first and a wide window is
-    all clear slots either way - which is how the first version of this test
-    passed vacuously.
+    STAT 35000 sits at 8pm on Wednesday 7 October 2026, so that exact hour is
+    contested for an audience that includes it and free for one that does not.
+    Pinned to the one slot rather than compared across a whole term, because
+    the ranker returns best-first and a wide window is all clear slots either
+    way - which is how the first version of this test passed vacuously.
+
+    The narrow package is built here rather than taken from the seed, so the
+    test keeps testing scoping even when the shipped audiences change - which
+    they since have: CS now covers every tracked course.
     """
-    cs = next(p for p in client.get("/api/packages").json() if p["name"] == "CS")
+    codes = {c["code"]: c["id"] for c in client.get("/api/courses").json()}
+    cs = client.post(
+        "/api/packages",
+        json={"name": "CS only", "course_ids": [codes["CS 25100"], codes["CS 25000"]]},
+    ).json()
 
     request = {
         "window_start": "2026-10-07",
@@ -69,7 +78,7 @@ def test_ranking_scoped_to_a_package_ignores_other_courses(client):
     assert not everyone[0]["is_clear"], "STAT 35000 sits here"
     assert "STAT 35000 midterm" in [c["label"] for c in everyone[0]["conflicts"]]
 
-    assert scoped[0]["is_clear"], "STAT is not the CS club's audience"
+    assert scoped[0]["is_clear"], "STAT is not in this audience"
     assert scoped[0]["conflicts"] == []
 
 

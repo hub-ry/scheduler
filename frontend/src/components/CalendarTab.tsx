@@ -3,6 +3,7 @@ import { api } from '../api'
 import { addDays, addMonths, formatMonth, monthGrid, startOfMonth, toDateInput } from '../dates'
 import { useAsyncData } from '../useAsyncData'
 import { MonthCalendar, MonthToolbar } from './MonthCalendar'
+import { QuickAddEvent } from './QuickAddEvent'
 
 /**
  * Looking at the schedule, one month to half a year.
@@ -23,11 +24,13 @@ type Span = (typeof SPANS)[number]['months']
 
 interface Props {
   refreshKey: number
+  onChanged: () => void
 }
 
-export function CalendarTab({ refreshKey }: Props) {
+export function CalendarTab({ refreshKey, onChanged }: Props) {
   const [span, setSpan] = useState<Span>(1)
   const [anchor, setAnchor] = useState(() => startOfMonth(new Date()))
+  const [adding, setAdding] = useState<Date | null>(null)
 
   const months = useMemo(
     () => Array.from({ length: span }, (_, index) => addMonths(anchor, index)),
@@ -90,11 +93,22 @@ export function CalendarTab({ refreshKey }: Props) {
 
       {error && <div className="notice error">{error}</div>}
 
+      {adding ? (
+        <QuickAddEvent day={adding} onClose={() => setAdding(null)} onAdded={onChanged} />
+      ) : (
+        <p className="hint">Click a day to add a competing event.</p>
+      )}
+
       <div className={`month-stack span-${span}`}>
         {months.map((month) => (
           <section key={month.toISOString()} className="month-panel">
             {span > 1 && <h4 className="month-panel-title">{formatMonth(month)}</h4>}
-            <MonthCalendar month={month} blocks={blocks} dense={span > 1} />
+            <MonthCalendar
+              month={month}
+              blocks={blocks}
+              dense={span > 1}
+              onPickDay={setAdding}
+            />
           </section>
         ))}
       </div>

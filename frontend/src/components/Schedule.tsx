@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   api,
   ApiError,
+  type Idea,
   type Package,
   type RankRequest,
   type RankResponse,
@@ -66,6 +67,10 @@ export function Schedule({ onChanged, refreshKey }: Props) {
   const [hovered, setHovered] = useState<Slot | null>(null)
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
 
+  // Which idea this booking is for. The board is the list of things we intend
+  // to run, so scheduling one should tick it off there rather than creating an
+  // unrelated event with a similar name.
+  const [ideaId, setIdeaId] = useState<number | ''>('')
   const [title, setTitle] = useState('')
   const [pushing, setPushing] = useState(false)
   const [pushed, setPushed] = useState<string | null>(null)
@@ -88,6 +93,11 @@ export function Schedule({ onChanged, refreshKey }: Props) {
   // the next search without anything here having to be told about it.
   const audience = packages.find((option) => option.name === LOCKED_AUDIENCE)
   const scoped: RankRequest = { ...request, course_ids: audience?.course_ids ?? null }
+
+  const { data: ideas } = useAsyncData<Idea[]>(api.ideas, `ideas:${refreshKey}`, [])
+  const unscheduled = ideas.filter((idea) => idea.event_id === null)
+  const chosenIdea = ideas.find((idea) => idea.id === ideaId)
+  const eventName = chosenIdea?.title ?? title.trim()
 
   const { data: blocks } = useAsyncData(
     () => api.busy(`${from}T00:00:00`, `${to}T00:00:00`),
@@ -129,8 +139,8 @@ export function Schedule({ onChanged, refreshKey }: Props) {
     setPushing(true)
     setError(null)
     try {
-      await api.createEvent({
-        title: title.trim() || 'Our event',
+      const created = await api.createEvent({
+        title: eventName || 'Our event',
         organization: '',
         location: '',
         starts_at: proposed.start,
@@ -140,6 +150,7 @@ export function Schedule({ onChanged, refreshKey }: Props) {
         source: 'manual',
         is_ours: true,
       })
+      if (chosenIdea) await api.updateIdea(chosenIdea.id, { event_id: created.id })
       onChanged()
 
       const ours = (await api.events()).filter((event) => event.is_ours)
@@ -147,9 +158,14 @@ export function Schedule({ onChanged, refreshKey }: Props) {
       const plan = await planTarget(token, 'ours', await Promise.all(ours.map(clubEventToEvent)))
       await applyPlan(token, plan)
 
-      setPushed('Booked and pushed to Google Calendar.')
+      setPushed(
+        chosenIdea
+          ? `Booked "${chosenIdea.title}" and pushed it to Google Calendar.`
+          : 'Booked and pushed to Google Calendar.',
+      )
       onProposeSlot(null)
       setTitle('')
+      setIdeaId('')
     } catch (caught) {
       const message =
         caught instanceof ApiError || caught instanceof GoogleError || caught instanceof Error
@@ -209,7 +225,7 @@ export function Schedule({ onChanged, refreshKey }: Props) {
           }
           preview={
             showing
-              ? { start: showing.start, end: showing.end, label: title.trim() || 'Your event' }
+              ? { start: showing.start, end: showing.end, label: eventName || 'Your event' }
               : null
           }
         />
@@ -225,15 +241,36 @@ export function Schedule({ onChanged, refreshKey }: Props) {
 
         <div className="plan-commit">
           <div className="field">
-            <label htmlFor="event-title">Event name</label>
-            <input
-              id="event-title"
-              value={title}
-              placeholder="Callout #2"
-              onChange={(event) => setTitle(event.target.value)}
+            <label htmlFor="event-idea">What are you booking?</label>
+            <select
+              id="event-idea"
+              value={ideaId}
               disabled={!proposed || pushing}
-            />
+              onChange={(event) =>
+                setIdeaId(event.target.value === '' ? '' : Number(event.target.value))
+              }
+            >
+              <option value="">Something else…</option>
+              {unscheduled.map((idea) => (
+                <option key={idea.id} value={idea.id}>
+                  {idea.title}
+                </option>
+              ))}
+            </select>
           </div>
+
+          {ideaId === '' && (
+            <div className="field">
+              <label htmlFor="event-title">Event name</label>
+              <input
+                id="event-title"
+                value={title}
+                placeholder="Callout #2"
+                onChange={(event) => setTitle(event.target.value)}
+                disabled={!proposed || pushing}
+              />
+            </div>
+          )}
           <button className="primary" type="button" onClick={commit} disabled={!proposed || pushing}>
             {pushing ? 'Booking…' : 'Book it and push to Google'}
           </button>

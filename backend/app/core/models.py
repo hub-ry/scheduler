@@ -160,6 +160,27 @@ class ClubEvent(SQLModel, table=True):
         return self.expected_attendance * self.audience_fraction
 
 
+class EventIdea(SQLModel, table=True):
+    """An event someone wants to hold, before it has a date.
+
+    The brainstorm list. Deliberately not a :class:`ClubEvent` with nullable
+    times: an idea and a booking are different things, and making the dates
+    optional would mean every query that reasons about time had to remember to
+    exclude the rows that have none.
+
+    ``position`` is what the list is ordered by, so dragging a card reorders
+    intent rather than editing anything about the events themselves.
+    ``event_id`` is the link to the booking once one exists, and is what makes
+    a card read as scheduled.
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+    title: str
+    notes: str = ""
+    position: int = Field(default=0, index=True)
+    event_id: int | None = Field(default=None, foreign_key="clubevent.id")
+
+
 class Exam(SQLModel, table=True):
     """A one-off exam sitting for a course.
 

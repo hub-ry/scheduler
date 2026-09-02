@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
 from app.api import schemas
-from app.core.models import ClubEvent, Course, Exam, Package, Term
+from app.core.models import ClubEvent, Course, EventIdea, Exam, Package, Term
 from app.core.registrar import parse_exam_table
 from app.core.scheduling import (
     BusyInterval,
@@ -216,6 +216,85 @@ def delete_package(package_id: int, session: SessionDep):
     # whoever happened to file them under one audience.
     session.delete(package)
     session.commit()
+
+
+def _idea_out(idea: EventIdea, session: Session) -> schemas.IdeaOut:
+    booking = session.get(ClubEvent, idea.event_id) if idea.event_id else None
+    return schemas.IdeaOut(
+        id=idea.id,
+        title=idea.title,
+        notes=idea.notes,
+        position=idea.position,
+        event_id=idea.event_id,
+        scheduled_for=booking.starts_at if booking else None,
+    )
+
+
+@router.get("/ideas", response_model=list[schemas.IdeaOut])
+def list_ideas(session: SessionDep):
+    ideas = session.exec(select(EventIdea).order_by(EventIdea.position, EventIdea.id)).all()
+    return [_idea_out(i, session) for i in ideas]
+
+
+@router.post("/ideas", response_model=schemas.IdeaOut, status_code=201)
+def create_idea(payload: schemas.IdeaIn, session: SessionDep):
+    # New cards go to the bottom, where you were looking when you added one.
+    last = session.exec(select(EventIdea).order_by(EventIdea.position.desc())).first()
+    idea = EventIdea(
+        title=payload.title,
+        notes=payload.notes,
+        position=(last.position + 1) if last else 0,
+    )
+    session.add(idea)
+    session.commit()
+    session.refresh(idea)
+    return _idea_out(idea, session)
+
+
+@router.patch("/ideas/{idea_id}", response_model=schemas.IdeaOut)
+def update_idea(idea_id: int, payload: schemas.IdeaUpdate, session: SessionDep):
+    idea = session.get(EventIdea, idea_id)
+    if idea is None:
+        raise HTTPException(404, "idea not found")
+    fields = payload.model_dump(exclude_unset=True)
+    if "event_id" in fields and fields["event_id"] is not None:
+        if session.get(ClubEvent, fields["event_id"]) is None:
+            raise HTTPException(404, "no such event to link")
+    for field, value in fields.items():
+        setattr(idea, field, value)
+    session.add(idea)
+    session.commit()
+    session.refresh(idea)
+    return _idea_out(idea, session)
+
+
+@router.delete("/ideas/{idea_id}", status_code=204)
+def delete_idea(idea_id: int, session: SessionDep):
+    idea = session.get(EventIdea, idea_id)
+    if idea is None:
+        raise HTTPException(404, "idea not found")
+    # Only the card goes. A booking it was linked to is a real event on a real
+    # calendar, and deleting a brainstorm note should not cancel it.
+    session.delete(idea)
+    session.commit()
+
+
+@router.post("/ideas/reorder", response_model=list[schemas.IdeaOut])
+def reorder_ideas(payload: schemas.ReorderRequest, session: SessionDep):
+    """Rewrite every position from one ordered list of ids.
+
+    Takes the whole order rather than a moved-from/moved-to pair, because the
+    board already knows the arrangement it is showing and sending it wholesale
+    cannot leave the server's idea of the order disagreeing with the screen.
+    """
+    ideas = {i.id: i for i in session.exec(select(EventIdea)).all()}
+    if set(payload.ids) != set(ideas):
+        raise HTTPException(400, "reorder must list every idea exactly once")
+    for position, idea_id in enumerate(payload.ids):
+        ideas[idea_id].position = position
+        session.add(ideas[idea_id])
+    session.commit()
+    return [_idea_out(ideas[i], session) for i in payload.ids]
 
 
 @router.get("/exams", response_model=list[schemas.ExamOut])

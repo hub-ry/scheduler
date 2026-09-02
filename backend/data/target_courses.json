@@ -13,8 +13,11 @@
   "packages": [
     {
       "name": "CS",
-      "description": "CS majors and the maths they take alongside it. The default audience.",
-      "courses": ["CS 25100", "CS 25000", "CS 30700", "MA 26500", "MA 35100"]
+      "description": "The default audience: everything a CS student actually sits, which is the CS courses plus the maths and stats they take alongside them.",
+      "courses": [
+        "MA 16100", "MA 16200", "MA 26100", "MA 26500", "MA 35100",
+        "STAT 35000", "CS 25100", "CS 30700", "CS 25000"
+      ]
     },
     {
       "name": "All",

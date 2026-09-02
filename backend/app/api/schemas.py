@@ -6,9 +6,9 @@ can be exposed without becoming columns.
 """
 
 from datetime import date, datetime, time
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, StringConstraints, model_validator
 
 from app.core.models import Weekday
 
@@ -51,6 +51,39 @@ class PackageUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=80)
     description: str | None = None
     course_ids: list[int] | None = None
+
+
+class IdeaOut(BaseModel):
+    id: int
+    title: str
+    notes: str
+    position: int
+    event_id: int | None
+    #: Denormalised from the linked booking so the board can show when it lands
+    #: without fetching every event to find out.
+    scheduled_for: datetime | None = None
+
+
+class IdeaIn(BaseModel):
+    # Stripped before validation, so a title of spaces is rejected rather than
+    # creating a card with an invisible name.
+    title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)]
+    notes: str = ""
+
+
+class IdeaUpdate(BaseModel):
+    title: (
+        Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)]
+        | None
+    ) = None
+    notes: str | None = None
+    event_id: int | None = None
+
+
+class ReorderRequest(BaseModel):
+    """The ids of every idea, in the order they should now appear."""
+
+    ids: list[int]
 
 
 class ExamOut(BaseModel):

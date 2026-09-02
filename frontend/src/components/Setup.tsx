@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Courses } from './Courses'
 import { Events } from './Events'
+import { Ideas } from './Ideas'
 import { GoogleSync } from './GoogleSync'
 import { Import } from './Import'
 
@@ -13,9 +14,14 @@ import { Import } from './Import'
  * jobs rather than a form to work down.
  */
 
-type Section = 'courses' | 'events' | 'import' | 'google'
+type Section = 'ideas' | 'courses' | 'events' | 'import' | 'google'
 
 const SECTIONS: { id: Section; label: string; blurb: string }[] = [
+  {
+    id: 'ideas',
+    label: 'Event ideas',
+    blurb: 'What you want to run, in priority order.',
+  },
   {
     id: 'courses',
     label: 'Courses',
@@ -40,10 +46,11 @@ const SECTIONS: { id: Section; label: string; blurb: string }[] = [
 
 interface Props {
   onChanged: () => void
+  refreshKey: number
 }
 
-export function Setup({ onChanged }: Props) {
-  const [section, setSection] = useState<Section>('courses')
+export function Setup({ onChanged, refreshKey }: Props) {
+  const [section, setSection] = useState<Section>('ideas')
 
   return (
     <div className="setup">
@@ -63,6 +70,7 @@ export function Setup({ onChanged }: Props) {
       </nav>
 
       <div className="setup-body">
+        {section === 'ideas' && <Ideas onChanged={onChanged} refreshKey={refreshKey} />}
         {section === 'courses' && <Courses />}
         {section === 'events' && <Events onChanged={onChanged} prefill={null} />}
         {section === 'import' && <Import onChanged={onChanged} />}

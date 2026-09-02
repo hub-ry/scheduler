@@ -49,8 +49,8 @@ export default function App() {
       {tab === 'schedule' && (
         <Schedule onChanged={invalidate} refreshKey={refreshKey} />
       )}
-      {tab === 'calendar' && <CalendarTab refreshKey={refreshKey} />}
-      {tab === 'setup' && <Setup onChanged={invalidate} />}
+      {tab === 'calendar' && <CalendarTab refreshKey={refreshKey} onChanged={invalidate} />}
+      {tab === 'setup' && <Setup onChanged={invalidate} refreshKey={refreshKey} />}
     </div>
   )
 }

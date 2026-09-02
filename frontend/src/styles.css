@@ -213,6 +213,20 @@ textarea {
   min-width: 0;
 }
 
+/*
+ * Buttons inherit the theme's text colour.
+ *
+ * Without this a button with no colour of its own falls back to the browser's
+ * `buttontext`, which is black and does not follow the theme - so any button
+ * styled as bare text (the setup nav, the zoom toggle, the month arrows) came
+ * out black on a dark background while everything around it was correct.
+ */
+button {
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
@@ -1226,4 +1240,129 @@ td.small {
 /* A drag across the grid should not leave the day numbers highlighted blue. */
 .month-cell.is-pickable {
   user-select: none;
+}
+
+/*
+ * Quick add, opened by clicking a day.
+ *
+ * Sits above the grid rather than floating over it: a popover anchored to a
+ * cell would cover the very days you are trying to compare against.
+ */
+.quick-add {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem 1rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+}
+
+.quick-add-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+
+.quick-add .field {
+  max-width: 26rem;
+}
+
+.quick-add .field-row {
+  max-width: 26rem;
+}
+
+/*
+ * Event ideas: one column, ordered by priority, dragged to reorder.
+ */
+.idea-add {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+
+.idea-add input {
+  flex: 1;
+  min-width: 0;
+}
+
+.idea-add button {
+  flex: none;
+}
+
+.ideas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.idea {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.idea-grip {
+  color: var(--text-faint);
+  cursor: grab;
+  user-select: none;
+}
+
+.idea.is-dragging {
+  opacity: 0.4;
+}
+
+/* The gap opens above the card the pointer is over, so the drop lands where
+ * the line appears rather than one row off. */
+.idea.is-over {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.idea-title {
+  border-color: transparent;
+  background: none;
+}
+
+.idea-title:hover {
+  border-color: var(--border);
+}
+
+.idea-status {
+  flex: none;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-faint);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.idea-status.is-booked {
+  background: var(--clear-soft);
+  color: var(--clear);
+  font-weight: 600;
+}
+
+.idea.is-scheduled {
+  border-color: color-mix(in srgb, var(--clear) 35%, var(--border));
+}
+
+.idea-remove {
+  border: 0;
+  background: none;
+  color: var(--text-faint);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.1rem 0.3rem;
+}
+
+.idea-remove:hover {
+  color: var(--bad);
 }
