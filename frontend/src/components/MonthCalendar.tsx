@@ -69,13 +69,20 @@ export function MonthCalendar({
   useEffect(() => {
     if (anchor === null) return
     function finish() {
-      if (anchor && cursor && onSelectRange) onSelectRange(orderRange(anchor, cursor))
+      if (anchor && cursor) {
+        // A press that never left the cell it started in is a click, not a
+        // drag of one day. Both gestures live on this grid - drag sets the
+        // search window, click adds a competing event - and this is the line
+        // between them, so a short drag cannot silently open a form.
+        if (isSameDay(anchor, cursor) && onPickDay) onPickDay(anchor)
+        else onSelectRange?.(orderRange(anchor, cursor))
+      }
       setAnchor(null)
       setCursor(null)
     }
     window.addEventListener('pointerup', finish)
     return () => window.removeEventListener('pointerup', finish)
-  }, [anchor, cursor, onSelectRange])
+  }, [anchor, cursor, onSelectRange, onPickDay])
 
   const dragging = anchor && cursor ? orderRange(anchor, cursor) : null
   const shown = dragging ?? range
@@ -134,7 +141,7 @@ export function MonthCalendar({
             <div
               key={key}
               className={classes}
-              onClick={onPickDay ? () => onPickDay(day) : undefined}
+              onClick={onPickDay && !onSelectRange ? () => onPickDay(day) : undefined}
               onPointerDown={
                 onSelectRange
                   ? (event) => {

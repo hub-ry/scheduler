@@ -67,7 +67,7 @@ export function Schedule({ onChanged, refreshKey }: Props) {
 
   const [hovered, setHovered] = useState<Slot | null>(null)
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
-  const [addingCompeting, setAddingCompeting] = useState(false)
+  const [addingCompeting, setAddingCompeting] = useState<Date | true | null>(null)
 
   // Which idea this booking is for. The board is the list of things we intend
   // to run, so scheduling one should tick it off there rather than creating an
@@ -216,20 +216,25 @@ export function Schedule({ onChanged, refreshKey }: Props) {
             className="ghost"
             type="button"
             onClick={() => setAddingCompeting(true)}
-            disabled={addingCompeting}
+            disabled={addingCompeting !== null}
           >
             + Competing event
           </button>
         </MonthToolbar>
 
         {addingCompeting && (
-          <QuickAddEvent onClose={() => setAddingCompeting(false)} onAdded={onChanged} />
+          <QuickAddEvent
+            day={addingCompeting === true ? undefined : addingCompeting}
+            onClose={() => setAddingCompeting(null)}
+            onAdded={onChanged}
+          />
         )}
 
         <MonthCalendar
           month={month}
           blocks={blocks}
           range={{ start: parseLocal(`${request.window_start}T00:00:00`), end: parseLocal(`${request.window_end}T00:00:00`) }}
+          onPickDay={setAddingCompeting}
           onSelectRange={(selected: DayRange) =>
             setRequest((previous) => ({
               ...previous,
@@ -295,8 +300,8 @@ export function Schedule({ onChanged, refreshKey }: Props) {
         </div>
         {!proposed && (
           <p className="hint">
-            Click a suggestion to choose it. Hovering only previews - nothing is written until you
-            book.
+            Click a suggestion to choose it, or drag across the calendar to change the window.
+            Clicking a day logs a competing event on it.
           </p>
         )}
       </div>
