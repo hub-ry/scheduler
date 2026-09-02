@@ -8,4 +8,4 @@
 - output to google calender and displayed via google Oauth + google calender api
 
 
--hosted via cloudflare tunnel so i can access any time with password
+- hosted via cloudflare tunnel so i can access any time with password
