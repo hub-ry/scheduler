@@ -857,17 +857,31 @@ button.ghost.icon {
   min-width: 0;
 }
 
+/*
+ * The commit row.
+ *
+ * Stacked, not a flex row with the button beside the input. Side by side, the
+ * field's label sat directly against the button and the two read as one
+ * cramped control; naming the event and booking it are separate steps and now
+ * look it. The rule above separates it from the calendar, since it is the only
+ * part of this card that writes anything.
+ */
 .plan-commit {
   display: flex;
-  align-items: flex-end;
-  gap: 0.6rem;
-  margin-top: 1rem;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
 }
 
 .plan-commit .field {
-  flex: 1;
-  min-width: 0;
   margin: 0;
+  max-width: 24rem;
+}
+
+.plan-commit button.primary {
+  align-self: flex-start;
 }
 
 .faint.is-previewing {
@@ -1003,4 +1017,111 @@ tr.is-member {
 
 td.small {
   font-size: 0.78rem;
+}
+
+/*
+ * Setup: a sidebar of jobs rather than four more top-level tabs.
+ */
+.setup {
+  display: grid;
+  grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.setup-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.setup-nav button {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.55rem 0.7rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  text-align: left;
+}
+
+.setup-nav button strong {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.setup-nav button span {
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.setup-nav button:hover {
+  background: var(--surface-2);
+}
+
+.setup-nav button.is-active {
+  background: var(--accent-soft);
+}
+
+.setup-nav button.is-active strong {
+  color: var(--accent);
+}
+
+.setup-body {
+  min-width: 0;
+}
+
+/* The setup sections each render their own card, so drop the extra top margin
+ * that would otherwise misalign them with the nav beside them. */
+.setup-body > .card:first-child {
+  margin-top: 0;
+}
+
+/*
+ * Month/week toggle: a segmented control, not two more tabs.
+ */
+.scale-toggle {
+  display: inline-flex;
+  margin-bottom: 0.75rem;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+
+.scale-toggle button {
+  padding: 0.3rem 0.95rem;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  font-size: 0.84rem;
+}
+
+.scale-toggle button[aria-selected='true'] {
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 600;
+  box-shadow: var(--shadow);
+}
+
+@media (max-width: 60rem) {
+  .setup {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .setup-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .setup-nav button span {
+    display: none;
+  }
 }

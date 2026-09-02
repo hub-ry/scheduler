@@ -17,14 +17,21 @@ import { SlotList } from './SlotList'
 import { SlotSearchForm } from './SlotSearchForm'
 
 /**
- * Plan a date: suggest, see it in place, commit it.
+ * Schedule a date: suggest, see it in place, commit it.
  *
  * These three used to be separate tabs, which made the actual question - "what
  * does my month look like if I take this slot?" - something you had to hold in
  * your head while switching views. Here, hovering a suggestion draws it into
  * the month grid among everything it would compete with, so the comparison is
  * visual and costs nothing. Committing pushes it to Google Calendar.
+ *
+ * The audience is pinned to one package rather than offered as a control. There
+ * is only one club using this, and a picker whose answer never changes is one
+ * more thing to read past on the screen you use most.
  */
+
+/** The audience every search runs against. Swap this to re-point the app. */
+const LOCKED_AUDIENCE = 'CS club'
 
 const DEFAULT_WEEKDAYS: Weekday[] = [0, 1, 2, 3]
 
@@ -50,7 +57,7 @@ interface Props {
   onProposeSlot: (slot: Slot | null) => void
 }
 
-export function Plan({ onChanged, refreshKey, proposed, onProposeSlot }: Props) {
+export function Schedule({ onChanged, refreshKey, proposed, onProposeSlot }: Props) {
   const [request, setRequest] = useState<RankRequest>(defaultRequest)
   const [result, setResult] = useState<RankResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -76,6 +83,12 @@ export function Plan({ onChanged, refreshKey, proposed, onProposeSlot }: Props) 
     [],
   )
 
+  // Derived rather than stored: the request carries whatever the pinned package
+  // holds right now, so editing its membership on the Setup tab takes effect on
+  // the next search without anything here having to be told about it.
+  const audience = packages.find((option) => option.name === LOCKED_AUDIENCE)
+  const scoped: RankRequest = { ...request, course_ids: audience?.course_ids ?? null }
+
   const { data: blocks } = useAsyncData(
     () => api.busy(`${from}T00:00:00`, `${to}T00:00:00`),
     `${from}:${refreshKey}`,
@@ -89,7 +102,7 @@ export function Plan({ onChanged, refreshKey, proposed, onProposeSlot }: Props) 
     onProposeSlot(null)
     setPushed(null)
     try {
-      setResult(await api.rank(request))
+      setResult(await api.rank(scoped))
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : String(caught))
       setResult(null)
@@ -158,8 +171,12 @@ export function Plan({ onChanged, refreshKey, proposed, onProposeSlot }: Props) 
           onChange={setRequest}
           onSubmit={search}
           loading={loading}
-          packages={packages}
           title="What are you scheduling?"
+          hint={
+            audience
+              ? `Ranked against ${audience.course_codes.length} ${audience.name} courses.`
+              : 'Ranked by how little of your audience is already busy.'
+          }
         />
         <SlotList
           result={result}

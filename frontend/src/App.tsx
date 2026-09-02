@@ -1,40 +1,34 @@
 import { useState } from 'react'
 import type { Slot } from './api'
-import { Courses } from './components/Courses'
-import { Events } from './components/Events'
-import { GoogleSync } from './components/GoogleSync'
-import { MonthView } from './components/MonthView'
-import { Plan } from './components/Plan'
-import { Import } from './components/Import'
-import { WeekCalendar } from './components/WeekCalendar'
+import { CalendarTab } from './components/CalendarTab'
+import { Schedule } from './components/Schedule'
+import { Setup } from './components/Setup'
 
-type Tab = 'plan' | 'month' | 'week' | 'events' | 'courses' | 'import' | 'google'
+/**
+ * Three tabs, in the order you use them.
+ *
+ * Schedule is the daily work; Calendar is for looking; Setup holds everything
+ * touched a few times a semester. It was seven tabs, which put pasting a
+ * registrar table at the same level as the one screen that answers the
+ * question the app exists for.
+ */
+
+type Tab = 'schedule' | 'calendar' | 'setup'
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'plan', label: 'Plan' },
-  { id: 'month', label: 'Calendar' },
-  { id: 'week', label: 'Week' },
-  { id: 'events', label: 'Events' },
-  { id: 'courses', label: 'Courses' },
-  { id: 'import', label: 'Import' },
-  { id: 'google', label: 'Google Calendar' },
+  { id: 'schedule', label: 'Schedule' },
+  { id: 'calendar', label: 'Calendar' },
+  { id: 'setup', label: 'Setup' },
 ]
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>('plan')
+  const [tab, setTab] = useState<Tab>('schedule')
   const [proposed, setProposed] = useState<Slot | null>(null)
   // Anything that writes bumps this, so views holding fetched data refetch
   // rather than showing a stale calendar after an import or an edit.
   const [refreshKey, setRefreshKey] = useState(0)
 
   const invalidate = () => setRefreshKey((key) => key + 1)
-
-  // Just records the choice. It used to switch tabs as well, back when the
-  // suggestions and the calendar were separate views; on the Plan tab the
-  // calendar is already on screen, so jumping would take it away.
-  function proposeSlot(slot: Slot | null) {
-    setProposed(slot)
-  }
 
   return (
     <div className="app">
@@ -57,25 +51,16 @@ export default function App() {
         </nav>
       </header>
 
-      {tab === 'plan' && (
-        <Plan
+      {tab === 'schedule' && (
+        <Schedule
           onChanged={invalidate}
           refreshKey={refreshKey}
           proposed={proposed}
-          onProposeSlot={proposeSlot}
+          onProposeSlot={setProposed}
         />
       )}
-      {tab === 'month' && <MonthView refreshKey={refreshKey} />}
-      {tab === 'week' && <WeekCalendar proposed={proposed} refreshKey={refreshKey} />}
-      {tab === 'events' && (
-        <Events
-          onChanged={invalidate}
-          prefill={proposed ? { starts_at: proposed.start, ends_at: proposed.end } : null}
-        />
-      )}
-      {tab === 'courses' && <Courses onChanged={invalidate} />}
-      {tab === 'import' && <Import onChanged={invalidate} />}
-      {tab === 'google' && <GoogleSync />}
+      {tab === 'calendar' && <CalendarTab proposed={proposed} refreshKey={refreshKey} />}
+      {tab === 'setup' && <Setup onChanged={invalidate} />}
     </div>
   )
 }
