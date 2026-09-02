@@ -1,94 +1,64 @@
-# Deploying
+# Running it on Replit
 
-Free, and it stays free: a Render web service on the free plan, with the
-database on Neon's free Postgres. One process serves the API and the built
-frontend, so there is one URL and no CORS.
+For showing the board to other officers in a meeting: the repl runs, it has a
+URL, everyone can open it. Close it and it stops.
 
-## Why not SQLite
+Free, and it needs no database service. Unlike free container hosts, the Replit
+workspace has a real disk, so `scheduler.db` sits in the repl and survives
+between runs - which is why this is a `./serve` script and not a Dockerfile with
+a hosted Postgres behind it.
 
-Locally the database is `backend/scheduler.db` and that is fine. Render's free
-plan has no persistent disk, so a SQLite file lives only until the next restart
-or deploy - and free services restart often. Everything you had typed would
-vanish without warning, which is worse than not deploying at all.
+## Setup
 
-Neon's free tier is a real Postgres that keeps your data. `app/db.py` picks
-between them from `SCHEDULER_DATABASE_URL`, so nothing about local development
-changes.
+1. **Import the repo.** Replit → Create → Import from GitHub → this repository.
+   It reads `.replit`, which already sets the database path, seeding, and the
+   port.
 
-## What free actually means here
+2. **Set the password.** In the **Secrets** pane (the padlock), add:
 
-- **The service sleeps after 15 minutes idle**, and the next visit takes 30-60
-  seconds to wake up. For a tool opened a few times a week that is a shrug; if
-  it starts to annoy, Render's cheapest paid tier removes it.
-- **Neon's free branch sleeps too**, and wakes in a second or two.
-- Neither has a trial that expires.
+   ```
+   SCHEDULER_PASSWORD = whatever the exec board shares
+   ```
 
-## One-time setup
+   Not in a file. The repl is public, so a password in the repo is not a
+   password. `./serve` warns on start if this is unset, because the workspace
+   URL is reachable by anyone who has it.
 
-### 1. Database
+3. **Set the Google client id.** Also in Secrets:
 
-At <https://neon.tech>: sign up, create a project, copy the connection string
-from the dashboard. It looks like
-`postgresql://user:pass@ep-something.aws.neon.tech/neondb?sslmode=require`.
+   ```
+   VITE_GOOGLE_CLIENT_ID = <your id>.apps.googleusercontent.com
+   ```
 
-### 2. Service
+   Vite reads this at build time, and `./serve` builds on every start, so it is
+   picked up without anything extra.
 
-At <https://render.com>: **New → Blueprint**, point it at this repository. It
-reads `render.yaml` and creates the service. Then set the two secrets it asks
-for:
+4. **Press Run**, then copy the URL from the webview.
 
-| Variable | Value |
-| -------- | ----- |
-| `SCHEDULER_DATABASE_URL` | the Neon string from step 1 |
-| `SCHEDULER_PASSWORD` | whatever the exec board will share |
+5. **Add that URL to Google.** At
+   <https://console.cloud.google.com/apis/credentials>, open the OAuth client and
+   add it under **Authorized JavaScript origins**, keeping the localhost entries
+   so `./dev` still works.
 
-`SCHEDULER_SEED_ON_START` is already set, so the first boot loads the courses,
-packages and exam tables into the empty database. It is idempotent and safe to
-leave on.
+## The URL changes
 
-### 3. Google OAuth
+This is the one real annoyance. Replit's workspace URLs are not guaranteed
+stable between sessions, and Google requires an exact origin - so when the URL
+changes, Calendar sync fails with `no registered origin` until you add the new
+one in step 5.
 
-The client id is compiled into the frontend bundle, so it is a build argument
-rather than a runtime variable. In Render's settings, add a Docker build
-argument:
+Everything else in the app keeps working; it is only the Calendar push that
+needs the origin. A stable domain means Replit's Deployments, which are paid.
 
-```
-VITE_GOOGLE_CLIENT_ID = <your id>.apps.googleusercontent.com
-```
+## Local development is unchanged
 
-Then add the deployed origin to the OAuth client at
-<https://console.cloud.google.com/apis/credentials> under **Authorized
-JavaScript origins**, alongside the localhost ones:
-
-```
-https://scheduler.onrender.com
-```
-
-Use whatever hostname Render gave you. Keep the localhost entries so `./dev`
-keeps working.
-
-## The password gate
-
-`SCHEDULER_PASSWORD` gates the whole API. Without it the app is completely open
-to anyone with the URL - signing in with Google authorises *Calendar*, not this
-app, so it is not protecting anything here.
-
-Leave the variable unset and the gate disappears entirely, which is the right
-default locally: `./dev` never asks for a password.
-
-Changing the password signs everyone out, because sessions are signed with a key
-derived from it. That is deliberate - removing someone's access should take
-effect immediately.
+`./dev` still runs Vite with hot reload against the API, still uses
+`backend/scheduler.db`, and still has no password unless you set one. `./serve`
+is the production-shaped path: build once, one process, no hot reload.
 
 ## Backups
 
-The Neon dashboard has point-in-time restore on the free tier. Beyond that,
-`./snapshot` writes the whole database to `frontend/public/snapshot.json`, which
-is worth committing occasionally as a plain-text record you can read without a
-database at all.
-
-## Custom domain
-
-Render's dashboard takes a custom domain and issues the certificate. If you
-point `scheduler.ryhub.dev` at it, add that origin to the Google OAuth client
-too, or the Calendar sync will fail with `no registered origin`.
+The repl's disk is not a backup. `./snapshot` writes the whole database to
+`frontend/public/snapshot.json`, which is worth committing now and then - a
+plain-text record you can read without a database at all, and the file a static
+build would ship if this ever becomes one.

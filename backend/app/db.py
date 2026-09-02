@@ -14,24 +14,11 @@ from sqlmodel import Session, SQLModel, create_engine
 DEFAULT_DB_PATH = Path(__file__).resolve().parents[1] / "scheduler.db"
 DATABASE_URL = os.environ.get("SCHEDULER_DATABASE_URL", f"sqlite:///{DEFAULT_DB_PATH}")
 
-# Hosted Postgres providers hand out `postgres://` URLs, which SQLAlchemy
-# dropped support for in 2.0. Rewriting it here means the deployment can paste
-# the connection string it was given without having to know that.
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
-elif DATABASE_URL.startswith("postgresql://"):
-    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
-
 # check_same_thread=False because FastAPI serves requests from a thread pool and
 # each one opens its own short-lived session.
 engine = create_engine(
     DATABASE_URL,
     connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {},
-    # Free Postgres tiers close idle connections, and a pooled connection that
-    # was hung up on surfaces as a random failure on the next request rather
-    # than as anything diagnosable. Checking liveness on checkout costs a
-    # round trip and removes the whole class of problem.
-    pool_pre_ping=not DATABASE_URL.startswith("sqlite"),
 )
 
 

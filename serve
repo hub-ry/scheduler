@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#
+# Build the frontend and serve everything from one process: ./serve
+#
+# This is what Replit runs. Locally you want ./dev instead - it runs the Vite
+# dev server with hot reload, which this deliberately does not.
+#
+# Set SCHEDULER_PASSWORD (in Replit: the Secrets pane, never a file) to put the
+# shared-password gate in front of the app. The workspace URL is public while
+# the repl is running, so on Replit you want it set.
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND="$ROOT/backend"
+FRONTEND="$ROOT/frontend"
+
+if [ ! -d "$BACKEND/.venv" ]; then
+  echo "==> Creating the virtualenv"
+  python -m venv "$BACKEND/.venv"
+  "$BACKEND/.venv/bin/pip" install -q -e "$BACKEND"
+fi
+
+if [ ! -d "$FRONTEND/node_modules" ]; then
+  echo "==> Installing frontend dependencies"
+  npm --prefix "$FRONTEND" ci
+fi
+
+# Rebuilt every start rather than cached: a stale bundle serving old code is a
+# confusing failure, and the build takes a couple of seconds.
+echo "==> Building the frontend"
+npm --prefix "$FRONTEND" run build
+
+if [ -z "${SCHEDULER_PASSWORD:-}" ]; then
+  echo "==> WARNING: SCHEDULER_PASSWORD is not set, so anyone with the URL can edit."
+fi
+
+cd "$BACKEND"
+exec .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8000}"

@@ -1,0 +1,22 @@
+# Replit runs `./serve`, which builds the frontend once and then serves both it
+# and the API from a single process on $PORT.
+run = "./serve"
+entrypoint = "README.md"
+modules = ["python-3.12", "nodejs-20"]
+
+[nix]
+channel = "stable-24_05"
+
+# The workspace forwards this to the public URL. One port, because one process
+# serves the API and the built page - there is no separate dev server here.
+[[ports]]
+localPort = 8000
+externalPort = 80
+
+[env]
+# The database is a file in the repl, which persists between runs. This is the
+# whole reason a hosted database is not needed: unlike free container hosts,
+# the Replit workspace has a real disk.
+SCHEDULER_DATABASE_URL = "sqlite:///./scheduler.db"
+SCHEDULER_SEED_ON_START = "true"
+SCHEDULER_SECURE_COOKIE = "true"

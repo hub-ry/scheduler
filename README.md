@@ -198,16 +198,16 @@ this as a serverless page would take. The remaining piece is porting the ranker
 in `app/core/scheduling.py` to run in the browser. A test asserts the snapshot
 stays byte-identical to what the live API serves, so the two cannot drift.
 
-## Running it somewhere other than your laptop
+## Showing it to other people
 
-See [DEPLOY.md](DEPLOY.md). Short version: a free Render web service with the
-database on free Neon Postgres, one container serving the API and the built
-frontend from one origin.
+`./serve` builds the frontend and serves it and the API from one process, which
+is what Replit runs. See [DEPLOY.md](DEPLOY.md).
 
 `SCHEDULER_PASSWORD` puts a shared-password gate in front of the whole API.
 Without it the app is open to anyone with the URL - signing in with Google
-authorises Calendar, not this app - so it is worth setting on anything public.
-Leave it unset locally and the gate does not exist.
+authorises Calendar, not this app, so it protects nothing here. Leave it unset
+locally, where nothing outside the machine can reach it, and the gate does not
+exist at all.
 
 ## Checks
 
