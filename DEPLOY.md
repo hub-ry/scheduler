@@ -1,64 +1,118 @@
-# Running it on Replit
+# Running it on the server
 
-For showing the board to other officers in a meeting: the repl runs, it has a
-URL, everyone can open it. Close it and it stops.
+One Python process behind a Cloudflare Tunnel, on the always-on box. Free, and
+`scheduler.ryhub.dev` never changes - which matters more than it sounds, because
+Google requires an exact OAuth origin and re-adding it every time a URL moved
+was the thing that made every other free option annoying.
 
-Free, and it needs no database service. Unlike free container hosts, the Replit
-workspace has a real disk, so `scheduler.db` sits in the repl and survives
-between runs - which is why this is a `./serve` script and not a Dockerfile with
-a hosted Postgres behind it.
+Not Docker, not a hosted database, not a container host. This is one process and
+a SQLite file on a machine that already has a disk and a service manager.
+
+## Why the tunnel rather than a port
+
+`cloudflared` dials *out* to Cloudflare and Cloudflare routes traffic back down
+that connection. So:
+
+- No port forwarding, no inbound firewall rule, nothing exposed on your router.
+- TLS is terminated by Cloudflare, so no certificate to obtain or renew.
+- The app binds to `127.0.0.1`, so even on the LAN nothing can reach it except
+  through the tunnel.
+
+Tailscale stays what it already is for you: how you SSH in to administer it. It
+is not in the request path.
+
+## Prerequisite
+
+`ryhub.dev` has to be using Cloudflare's nameservers. If it is not, move it in
+the Cloudflare dashboard first - the tunnel cannot create the DNS record
+otherwise.
 
 ## Setup
 
-1. **Import the repo.** Replit → Create → Import from GitHub → this repository.
-   It reads `.replit`, which already sets the database path, seeding, and the
-   port.
+SSH in over Tailscale, then:
 
-2. **Set the password.** In the **Secrets** pane (the padlock), add:
+### 1. User and code
 
-   ```
-   SCHEDULER_PASSWORD = whatever the exec board shares
-   ```
+```bash
+sudo useradd --system --home /opt/scheduler --shell /usr/sbin/nologin scheduler
+sudo git clone https://github.com/hub-ry/scheduler.git /opt/scheduler
+sudo chown -R scheduler:scheduler /opt/scheduler
+```
 
-   Not in a file. The repl is public, so a password in the repo is not a
-   password. `./serve` warns on start if this is unset, because the workspace
-   URL is reachable by anyone who has it.
+Needs Python 3.12+ and Node 20+ on the box; `./serve` creates its own
+virtualenv and installs both dependency sets on first run.
 
-3. **Set the Google client id.** Also in Secrets:
+### 2. Secrets
 
-   ```
-   VITE_GOOGLE_CLIENT_ID = <your id>.apps.googleusercontent.com
-   ```
+```bash
+sudo cp /opt/scheduler/deploy/scheduler.env.example /etc/scheduler.env
+sudo nano /etc/scheduler.env          # fill in both values
+sudo chown root:scheduler /etc/scheduler.env
+sudo chmod 640 /etc/scheduler.env
+```
 
-   Vite reads this at build time, and `./serve` builds on every start, so it is
-   picked up without anything extra.
+`SCHEDULER_PASSWORD` is the shared password. `VITE_GOOGLE_CLIENT_ID` is compiled
+into the frontend, and `./serve` rebuilds on every start, so it is picked up
+without any extra step.
 
-4. **Press Run**, then copy the URL from the webview.
+Keep these out of the repo. The unit file deliberately reads them from
+`/etc/scheduler.env` rather than declaring them inline, because unit files are
+world-readable and this one is committed.
 
-5. **Add that URL to Google.** At
-   <https://console.cloud.google.com/apis/credentials>, open the OAuth client and
-   add it under **Authorized JavaScript origins**, keeping the localhost entries
-   so `./dev` still works.
+### 3. Service
 
-## The URL changes
+```bash
+sudo cp /opt/scheduler/deploy/scheduler.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now scheduler
+curl localhost:8000/health          # {"status":"ok"}
+```
 
-This is the one real annoyance. Replit's workspace URLs are not guaranteed
-stable between sessions, and Google requires an exact origin - so when the URL
-changes, Calendar sync fails with `no registered origin` until you add the new
-one in step 5.
+### 4. Tunnel
 
-Everything else in the app keeps working; it is only the Calendar push that
-needs the origin. A stable domain means Replit's Deployments, which are paid.
+```bash
+cloudflared tunnel login
+cloudflared tunnel create scheduler
+sudo cp /opt/scheduler/deploy/cloudflared-config.example.yml /etc/cloudflared/config.yml
+sudo nano /etc/cloudflared/config.yml    # check the hostname and credentials path
+cloudflared tunnel route dns scheduler scheduler.ryhub.dev
+sudo cloudflared service install
+```
 
-## Local development is unchanged
+### 5. Google
 
-`./dev` still runs Vite with hot reload against the API, still uses
-`backend/scheduler.db`, and still has no password unless you set one. `./serve`
-is the production-shaped path: build once, one process, no hot reload.
+At <https://console.cloud.google.com/apis/credentials>, open the OAuth client and
+add under **Authorized JavaScript origins**:
+
+```
+https://scheduler.ryhub.dev
+```
+
+Keep the localhost entries so `./dev` still works. This is the last time you
+should have to touch this - the hostname is yours and does not change.
+
+## Updating
+
+```bash
+cd /opt/scheduler && sudo -u scheduler git pull && sudo systemctl restart scheduler
+```
+
+`./serve` rebuilds the frontend on start, so a pull and a restart is the whole
+deploy.
 
 ## Backups
 
-The repl's disk is not a backup. `./snapshot` writes the whole database to
-`frontend/public/snapshot.json`, which is worth committing now and then - a
-plain-text record you can read without a database at all, and the file a static
-build would ship if this ever becomes one.
+`scheduler.db` is a single SQLite file, so a copy is a backup:
+
+```bash
+sudo -u scheduler sqlite3 /opt/scheduler/backend/scheduler.db ".backup /opt/scheduler/backup.db"
+```
+
+`./snapshot` also writes the whole database to
+`frontend/public/snapshot.json` - a plain-text record readable without a
+database at all, worth committing now and then.
+
+## Local development is unchanged
+
+`./dev` still runs Vite with hot reload against the API, still uses its own
+`backend/scheduler.db`, and still has no password unless you set one.

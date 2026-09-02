@@ -1,0 +1,15 @@
+# Cloudflare Tunnel config, normally /etc/cloudflared/config.yml.
+#
+# The tunnel dials out to Cloudflare, so nothing has to be port-forwarded and
+# the server needs no inbound firewall rule at all. That is the main reason to
+# prefer this over exposing a port directly.
+
+tunnel: scheduler
+credentials-file: /etc/cloudflared/scheduler.json
+
+ingress:
+  - hostname: scheduler.ryhub.dev
+    service: http://127.0.0.1:8000
+  # Every tunnel config needs a terminal catch-all or cloudflared refuses to
+  # start.
+  - service: http_status:404

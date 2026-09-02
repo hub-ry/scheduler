@@ -200,8 +200,10 @@ stays byte-identical to what the live API serves, so the two cannot drift.
 
 ## Showing it to other people
 
-`./serve` builds the frontend and serves it and the API from one process, which
-is what Replit runs. See [DEPLOY.md](DEPLOY.md).
+`./serve` builds the frontend and serves it and the API from one process. On the
+server that runs under systemd behind a Cloudflare Tunnel, which is one process
+and a SQLite file rather than a container and a hosted database. See
+[DEPLOY.md](DEPLOY.md).
 
 `SCHEDULER_PASSWORD` puts a shared-password gate in front of the whole API.
 Without it the app is open to anyone with the URL - signing in with Google

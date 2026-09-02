@@ -1,0 +1,43 @@
+# systemd unit for the scheduler.
+#
+# Install to /etc/systemd/system/scheduler.service, then:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now scheduler
+#
+# Deliberately not Docker. This is one Python process and a SQLite file; a
+# container would add an image build and a volume mount to a machine that
+# already has a disk and a service manager.
+
+[Unit]
+Description=Scheduler
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=scheduler
+Group=scheduler
+WorkingDirectory=/opt/scheduler
+
+# The secrets live here, not in this unit: unit files are world-readable and
+# get committed by accident, and this file is in the repo.
+EnvironmentFile=/etc/scheduler.env
+
+ExecStart=/opt/scheduler/serve
+Restart=on-failure
+RestartSec=5
+
+# Only bound to localhost, because cloudflared is what faces the internet.
+# Nothing should be able to reach this port from outside the machine.
+Environment=PORT=8000
+Environment=HOST=127.0.0.1
+
+# Modest hardening. The service needs its own directory and nothing else.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/scheduler
+
+[Install]
+WantedBy=multi-user.target

@@ -2,12 +2,12 @@
 #
 # Build the frontend and serve everything from one process: ./serve
 #
-# This is what Replit runs. Locally you want ./dev instead - it runs the Vite
-# dev server with hot reload, which this deliberately does not.
+# This is what the systemd unit runs on the server. Locally you want ./dev
+# instead - it runs the Vite dev server with hot reload, which this deliberately
+# does not.
 #
-# Set SCHEDULER_PASSWORD (in Replit: the Secrets pane, never a file) to put the
-# shared-password gate in front of the app. The workspace URL is public while
-# the repl is running, so on Replit you want it set.
+# Set SCHEDULER_PASSWORD to put the shared-password gate in front of the app.
+# On anything reachable from outside the machine you want it set.
 
 set -euo pipefail
 
@@ -36,4 +36,7 @@ if [ -z "${SCHEDULER_PASSWORD:-}" ]; then
 fi
 
 cd "$BACKEND"
-exec .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8000}"
+# Binds to localhost by default: the tunnel is what faces the internet, and a
+# process listening on 0.0.0.0 would also be reachable from the LAN, bypassing
+# it. Override HOST only if something else is doing the fronting.
+exec .venv/bin/uvicorn app.main:app --host "${HOST:-127.0.0.1}" --port "${PORT:-8000}"
