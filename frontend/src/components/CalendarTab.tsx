@@ -115,6 +115,7 @@ export function CalendarTab({ refreshKey, onChanged }: Props) {
               month={month}
               blocks={blocks}
               dense={span > 1}
+              highlight={adding instanceof Date ? adding : null}
               onPickDay={setAdding}
             />
           </section>

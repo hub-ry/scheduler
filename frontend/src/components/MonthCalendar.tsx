@@ -45,8 +45,8 @@ interface Props {
   onPickDay?: (day: Date) => void
   /** Drag across cells to choose a date range. */
   onSelectRange?: (range: DayRange) => void
-  /** A committed range, shaded so the current search window is visible. */
-  range?: DayRange | null
+  /** One day to mark - the day being acted on, not a range. */
+  highlight?: Date | null
 }
 
 export function MonthCalendar({
@@ -56,7 +56,7 @@ export function MonthCalendar({
   dense = false,
   onPickDay,
   onSelectRange,
-  range = null,
+  highlight = null,
 }: Props) {
   // The in-progress drag. Kept here rather than lifted, because a half-made
   // selection is not something the rest of the app should be able to see.
@@ -84,8 +84,10 @@ export function MonthCalendar({
     return () => window.removeEventListener('pointerup', finish)
   }, [anchor, cursor, onSelectRange, onPickDay])
 
-  const dragging = anchor && cursor ? orderRange(anchor, cursor) : null
-  const shown = dragging ?? range
+  // Only the live drag paints across days. A committed window used to stay
+  // shaded, which meant a fortnight of tinted cells sitting behind everything
+  // and competing with the one day actually being acted on.
+  const dragging = anchor && cursor && !isSameDay(anchor, cursor) ? orderRange(anchor, cursor) : null
 
   const days = useMemo(() => monthGrid(month), [month])
   const monthStart = startOfMonth(month)
@@ -123,15 +125,16 @@ export function MonthCalendar({
           const key = day.toDateString()
           const outside = day.getMonth() !== monthStart.getMonth()
           const showsPreview = key === previewDay
-          const inRange = shown !== null && day >= shown.start && day <= shown.end
+          const inRange = dragging !== null && day >= dragging.start && day <= dragging.end
           const classes = [
             'month-cell',
             outside && 'is-outside',
             isSameDay(day, today) && 'is-today',
             showsPreview && 'has-preview',
             inRange && 'in-range',
-            inRange && shown && isSameDay(day, shown.start) && 'range-start',
-            inRange && shown && isSameDay(day, shown.end) && 'range-end',
+            inRange && dragging && isSameDay(day, dragging.start) && 'range-start',
+            inRange && dragging && isSameDay(day, dragging.end) && 'range-end',
+            highlight && isSameDay(day, highlight) && 'is-selected',
             (onPickDay || onSelectRange) && 'is-pickable',
           ]
             .filter(Boolean)

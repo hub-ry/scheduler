@@ -236,7 +236,7 @@ export function Schedule({ onChanged, refreshKey }: Props) {
         <MonthCalendar
           month={month}
           blocks={blocks}
-          range={{ start: parseLocal(`${request.window_start}T00:00:00`), end: parseLocal(`${request.window_end}T00:00:00`) }}
+          highlight={addingCompeting instanceof Date ? addingCompeting : null}
           onPickDay={setAddingCompeting}
           onSelectRange={(selected: DayRange) =>
             setRequest((previous) => ({

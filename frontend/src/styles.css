@@ -1227,11 +1227,11 @@ td.small {
 }
 
 /*
- * The search window, shaded across the grid. Drag to change it.
+ * Drag feedback, and the day being acted on.
  *
- * Kept as a background tint rather than a border, so it sits behind the event
- * chips instead of boxing them in - the range is context for what is on the
- * days, not a thing competing with them.
+ * The tint only appears while a drag is in progress. A committed window used to
+ * stay shaded, which left a fortnight of tinted cells sitting behind everything
+ * and competing with the single day the form was actually open for.
  */
 .month-cell.in-range {
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
@@ -1255,6 +1255,13 @@ td.small {
 
 .month-cell.range-start.range-end {
   box-shadow: inset 2px 0 0 var(--accent), inset -2px 0 0 var(--accent);
+}
+
+/* The one day a form is open for. Outlined rather than filled, so the event
+ * chips inside it stay readable. */
+.month-cell.is-selected {
+  box-shadow: inset 0 0 0 2px var(--accent);
+  border-radius: var(--radius-sm);
 }
 
 /* A drag across the grid should not leave the day numbers highlighted blue. */
