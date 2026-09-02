@@ -15,13 +15,26 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND="$ROOT/backend"
 FRONTEND="$ROOT/frontend"
 
+# `python3`, not `python`: Ubuntu ships no unversioned alias, so `python` here
+# fails on a clean server with a message that looks nothing like the cause.
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+
 if [ ! -d "$BACKEND/.venv" ]; then
   echo "==> Creating the virtualenv"
-  python -m venv "$BACKEND/.venv"
-  "$BACKEND/.venv/bin/pip" install -q -e "$BACKEND"
+  "$PYTHON_BIN" -m venv "$BACKEND/.venv"
 fi
 
-if [ ! -d "$FRONTEND/node_modules" ]; then
+# Reinstalled whenever pyproject is newer than the marker, so a pull that adds a
+# dependency does not need anyone to remember this step. Production extras only;
+# the server has no reason to carry pytest and ruff.
+STAMP="$BACKEND/.venv/.deps-installed"
+if [ ! -f "$STAMP" ] || [ "$BACKEND/pyproject.toml" -nt "$STAMP" ]; then
+  echo "==> Installing backend dependencies"
+  "$BACKEND/.venv/bin/pip" install -q -e "$BACKEND"
+  touch "$STAMP"
+fi
+
+if [ ! -d "$FRONTEND/node_modules" ] || [ "$FRONTEND/package-lock.json" -nt "$FRONTEND/node_modules" ]; then
   echo "==> Installing frontend dependencies"
   npm --prefix "$FRONTEND" ci
 fi
