@@ -16,6 +16,7 @@ from app.core.models import Weekday
 class CourseOut(BaseModel):
     id: int
     code: str
+    short: str
     title: str
     enrollment: int | None
     audience_fraction: float

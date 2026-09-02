@@ -43,15 +43,6 @@ export function SlotList({ result, error, proposed, onProposeSlot, onHoverSlot, 
 
         {error && <div className="notice error">{error}</div>}
 
-        {result?.uses_placeholder_weights && (
-          <div className="notice warn">
-            Ranking uses placeholder enrollment for{' '}
-            {result.courses_missing_enrollment.join(', ')}. The order of clear slots is
-            reliable; the size of each conflict is not. Fill enrollment in on the Courses
-            tab to sharpen it.
-          </div>
-        )}
-
         {result && result.slots.length === 0 && (
           <p className="empty">
             No slot fits those constraints. Try a wider window or a shorter event.

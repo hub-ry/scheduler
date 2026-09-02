@@ -1089,7 +1089,6 @@ td.small {
  */
 .scale-toggle {
   display: inline-flex;
-  margin-bottom: 0.75rem;
   padding: 2px;
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -1124,4 +1123,51 @@ td.small {
   .setup-nav button span {
     display: none;
   }
+}
+
+/*
+ * Multi-month zoom.
+ *
+ * The same month grid repeated, not a different renderer per zoom level. At
+ * three and six months the cells go dense and the question changes from "what
+ * is on the 14th" to "where are the empty stretches", which is why the event
+ * chips are allowed to clip rather than being given room to wrap.
+ */
+.month-stack {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.month-stack.span-3,
+.month-stack.span-6 {
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+}
+
+.month-panel {
+  min-width: 0;
+}
+
+.month-panel-title {
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Dense cells only have room for a couple of chips before the row would grow,
+ * so cap the height and let the rest clip rather than pushing the grid out of
+ * alignment month to month. */
+.month.is-dense .month-events {
+  max-height: 3.1rem;
+  overflow: hidden;
+}
+
+.month.is-dense .month-event {
+  font-size: 0.66rem;
+}
+
+.calendar-tab .month-toolbar {
+  flex-wrap: wrap;
 }

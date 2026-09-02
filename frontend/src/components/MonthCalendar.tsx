@@ -129,10 +129,16 @@ export function MonthToolbar({
   month,
   onChange,
   children,
+  label,
+  step = 1,
 }: {
   month: Date
   onChange: (month: Date) => void
   children?: React.ReactNode
+  /** Overrides the title when the view spans more than the anchor month. */
+  label?: string
+  /** How many months a page turn moves, so a six-month view pages by six. */
+  step?: number
 }) {
   return (
     <div className="month-toolbar">
@@ -143,7 +149,7 @@ export function MonthToolbar({
         className="ghost icon"
         type="button"
         aria-label="Previous month"
-        onClick={() => onChange(addMonths(month, -1))}
+        onClick={() => onChange(addMonths(month, -step))}
       >
         ‹
       </button>
@@ -151,11 +157,11 @@ export function MonthToolbar({
         className="ghost icon"
         type="button"
         aria-label="Next month"
-        onClick={() => onChange(addMonths(month, 1))}
+        onClick={() => onChange(addMonths(month, step))}
       >
         ›
       </button>
-      <h3 className="month-title">{formatMonth(month)}</h3>
+      <h3 className="month-title">{label ?? formatMonth(month)}</h3>
       <span className="spacer" />
       {children}
     </div>

@@ -31,7 +31,7 @@ import { SlotSearchForm } from './SlotSearchForm'
  */
 
 /** The audience every search runs against. Swap this to re-point the app. */
-const LOCKED_AUDIENCE = 'CS club'
+const LOCKED_AUDIENCE = 'CS'
 
 const DEFAULT_WEEKDAYS: Weekday[] = [0, 1, 2, 3]
 
@@ -52,12 +52,11 @@ function defaultRequest(): RankRequest {
 interface Props {
   onChanged: () => void
   refreshKey: number
-  /** Lifted to App so the Week tab can draw the same choice. */
-  proposed: Slot | null
-  onProposeSlot: (slot: Slot | null) => void
 }
 
-export function Schedule({ onChanged, refreshKey, proposed, onProposeSlot }: Props) {
+export function Schedule({ onChanged, refreshKey }: Props) {
+  // Local again: the week view used to share this, and it is gone.
+  const [proposed, onProposeSlot] = useState<Slot | null>(null)
   const [request, setRequest] = useState<RankRequest>(defaultRequest)
   const [result, setResult] = useState<RankResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -172,11 +171,7 @@ export function Schedule({ onChanged, refreshKey, proposed, onProposeSlot }: Pro
           onSubmit={search}
           loading={loading}
           title="What are you scheduling?"
-          hint={
-            audience
-              ? `Ranked against ${audience.course_codes.length} ${audience.name} courses.`
-              : 'Ranked by how little of your audience is already busy.'
-          }
+          hint={audience ? `Ranked against ${audience.course_codes.length} ${audience.name} courses.` : undefined}
         />
         <SlotList
           result={result}

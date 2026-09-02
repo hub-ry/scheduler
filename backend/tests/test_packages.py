@@ -11,11 +11,11 @@ import pytest
 
 def test_seed_creates_the_declared_packages(client):
     names = {p["name"] for p in client.get("/api/packages").json()}
-    assert {"All target courses", "CS club", "Underclassmen", "Stats and data"} <= names
+    assert names == {"CS", "All"}
 
 
 def test_a_package_carries_its_courses(client):
-    cs = next(p for p in client.get("/api/packages").json() if p["name"] == "CS club")
+    cs = next(p for p in client.get("/api/packages").json() if p["name"] == "CS")
     assert "CS 25100" in cs["course_codes"]
     assert "STAT 35000" not in cs["course_codes"]
     assert len(cs["course_ids"]) == len(cs["course_codes"])
@@ -25,13 +25,13 @@ def test_reseeding_does_not_undo_an_edit(seeded, client):
     """Someone who removes a course from a package means it."""
     from app.seed import seed
 
-    cs = next(p for p in client.get("/api/packages").json() if p["name"] == "CS club")
+    cs = next(p for p in client.get("/api/packages").json() if p["name"] == "CS")
     trimmed = cs["course_ids"][:2]
     client.patch(f"/api/packages/{cs['id']}", json={"course_ids": trimmed})
 
     seed(seeded)
 
-    after = next(p for p in client.get("/api/packages").json() if p["name"] == "CS club")
+    after = next(p for p in client.get("/api/packages").json() if p["name"] == "CS")
     assert after["course_ids"] == trimmed
 
 
@@ -45,7 +45,7 @@ def test_ranking_scoped_to_a_package_ignores_other_courses(client):
     all clear slots either way - which is how the first version of this test
     passed vacuously.
     """
-    cs = next(p for p in client.get("/api/packages").json() if p["name"] == "CS club")
+    cs = next(p for p in client.get("/api/packages").json() if p["name"] == "CS")
 
     request = {
         "window_start": "2026-10-07",

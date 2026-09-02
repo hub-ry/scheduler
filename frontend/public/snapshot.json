@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-09-01T18:27:53",
+  "generated_at": "2026-09-02T00:19:26",
   "terms": [
     {
       "id": 1,
@@ -11,9 +11,9 @@
   ],
   "packages": [
     {
-      "id": 1,
-      "name": "All target courses",
-      "description": "Every gateway course. The right default when the event is open to campus.",
+      "id": 2,
+      "name": "All",
+      "description": "Every tracked course, for an event open to campus.",
       "course_ids": [
         9,
         7,
@@ -38,9 +38,9 @@
       ]
     },
     {
-      "id": 2,
-      "name": "CS club",
-      "description": "CS majors and the maths they are taking alongside it.",
+      "id": 1,
+      "name": "CS",
+      "description": "CS majors and the maths they take alongside it. The default audience.",
       "course_ids": [
         9,
         7,
@@ -55,46 +55,13 @@
         "MA 26500",
         "MA 35100"
       ]
-    },
-    {
-      "id": 4,
-      "name": "Stats and data",
-      "description": "The statistics and linear-algebra crowd.",
-      "course_ids": [
-        4,
-        5,
-        6
-      ],
-      "course_codes": [
-        "MA 26500",
-        "MA 35100",
-        "STAT 35000"
-      ]
-    },
-    {
-      "id": 3,
-      "name": "Underclassmen",
-      "description": "First and second years, before anyone has specialised.",
-      "course_ids": [
-        9,
-        7,
-        1,
-        2,
-        3
-      ],
-      "course_codes": [
-        "CS 25000",
-        "CS 25100",
-        "MA 16100",
-        "MA 16200",
-        "MA 26100"
-      ]
     }
   ],
   "courses": [
     {
       "id": 9,
       "code": "CS 25000",
+      "short": "CS 250",
       "title": "Computer Architecture",
       "enrollment": null,
       "audience_fraction": 1.0,
@@ -105,6 +72,7 @@
     {
       "id": 7,
       "code": "CS 25100",
+      "short": "CS 251",
       "title": "Data Structures and Algorithms",
       "enrollment": null,
       "audience_fraction": 1.0,
@@ -115,6 +83,7 @@
     {
       "id": 8,
       "code": "CS 30700",
+      "short": "CS 307",
       "title": "Software Engineering I",
       "enrollment": null,
       "audience_fraction": 1.0,
@@ -125,6 +94,7 @@
     {
       "id": 1,
       "code": "MA 16100",
+      "short": "MA 161",
       "title": "Plane Analytic Geometry and Calculus I",
       "enrollment": null,
       "audience_fraction": 1.0,
@@ -135,6 +105,7 @@
     {
       "id": 2,
       "code": "MA 16200",
+      "short": "MA 162",
       "title": "Plane Analytic Geometry and Calculus II",
       "enrollment": null,
       "audience_fraction": 1.0,
@@ -145,6 +116,7 @@
     {
       "id": 3,
       "code": "MA 26100",
+      "short": "MA 261",
       "title": "Multivariate Calculus",
       "enrollment": null,
       "audience_fraction": 1.0,
@@ -155,6 +127,7 @@
     {
       "id": 4,
       "code": "MA 26500",
+      "short": "MA 265",
       "title": "Linear Algebra",
       "enrollment": null,
       "audience_fraction": 1.0,
@@ -165,6 +138,7 @@
     {
       "id": 5,
       "code": "MA 35100",
+      "short": "MA 351",
       "title": "Elementary Linear Algebra",
       "enrollment": null,
       "audience_fraction": 1.0,
@@ -175,6 +149,7 @@
     {
       "id": 6,
       "code": "STAT 35000",
+      "short": "STAT 350",
       "title": "Introduction to Statistics",
       "enrollment": null,
       "audience_fraction": 1.0,

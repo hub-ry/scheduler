@@ -112,6 +112,7 @@ def list_courses(session: SessionDep):
         schemas.CourseOut(
             id=c.id,
             code=c.code,
+            short=c.short,
             title=c.title,
             enrollment=c.enrollment,
             audience_fraction=c.audience_fraction,
@@ -137,6 +138,7 @@ def update_course(course_id: int, payload: schemas.CourseUpdate, session: Sessio
     return schemas.CourseOut(
         id=course.id,
         code=course.code,
+        short=course.short,
         title=course.title,
         enrollment=course.enrollment,
         audience_fraction=course.audience_fraction,

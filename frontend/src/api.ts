@@ -11,6 +11,8 @@ export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6
 export interface Course {
   id: number
   code: string
+  /** "CS 251" - how the course is actually referred to. `code` is the join key. */
+  short: string
   title: string
   enrollment: number | null
   audience_fraction: number

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import type { Slot } from './api'
 import { CalendarTab } from './components/CalendarTab'
 import { Schedule } from './components/Schedule'
 import { Setup } from './components/Setup'
@@ -23,7 +22,6 @@ const TABS: { id: Tab; label: string }[] = [
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('schedule')
-  const [proposed, setProposed] = useState<Slot | null>(null)
   // Anything that writes bumps this, so views holding fetched data refetch
   // rather than showing a stale calendar after an import or an edit.
   const [refreshKey, setRefreshKey] = useState(0)
@@ -33,10 +31,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <div>
-          <h1>Scheduler</h1>
-          <p>Find a time your people are actually free.</p>
-        </div>
+        <h1>Scheduler</h1>
         <nav className="tabs" role="tablist">
           {TABS.map(({ id, label }) => (
             <button
@@ -52,14 +47,9 @@ export default function App() {
       </header>
 
       {tab === 'schedule' && (
-        <Schedule
-          onChanged={invalidate}
-          refreshKey={refreshKey}
-          proposed={proposed}
-          onProposeSlot={setProposed}
-        />
+        <Schedule onChanged={invalidate} refreshKey={refreshKey} />
       )}
-      {tab === 'calendar' && <CalendarTab proposed={proposed} refreshKey={refreshKey} />}
+      {tab === 'calendar' && <CalendarTab refreshKey={refreshKey} />}
       {tab === 'setup' && <Setup onChanged={invalidate} />}
     </div>
   )

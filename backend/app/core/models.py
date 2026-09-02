@@ -73,6 +73,9 @@ class Course(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     code: str = Field(index=True)
+    #: How the course is actually referred to out loud - "CS 251" for CS 25100.
+    #: The registrar's five-digit code is the join key; this is the label.
+    short: str = ""
     title: str = ""
     enrollment: int | None = None
     audience_fraction: float = 1.0

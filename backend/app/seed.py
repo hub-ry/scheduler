@@ -50,6 +50,7 @@ def seed(session: Session) -> dict[str, int]:
             course = Course(code=spec["code"], term_id=term.id)
             session.add(course)
         course.title = spec.get("title", "")
+        course.short = spec.get("short", spec["code"])
         # Never overwrite a real enrollment someone entered with a null from the
         # seed file; the seed only ever fills in what is still unknown.
         if spec.get("enrollment") is not None:

@@ -59,7 +59,7 @@ export function SlotSearchForm({
   return (
       <form className="card" onSubmit={onSubmit}>
         <h2>{title ?? 'Find a time'}</h2>
-        <p className="hint">{hint ?? 'Ranked by how little of your audience is already busy.'}</p>
+        {hint && <p className="hint">{hint}</p>}
 
         {packages.length > 0 && (
           <div className="field">

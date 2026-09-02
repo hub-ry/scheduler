@@ -18,8 +18,8 @@ type Section = 'courses' | 'events' | 'import' | 'google'
 const SECTIONS: { id: Section; label: string; blurb: string }[] = [
   {
     id: 'courses',
-    label: 'Courses & packages',
-    blurb: 'Who you are recruiting, and how much each class weighs.',
+    label: 'Courses',
+    blurb: 'The classes whose exams a slot is ranked against.',
   },
   {
     id: 'events',
@@ -63,7 +63,7 @@ export function Setup({ onChanged }: Props) {
       </nav>
 
       <div className="setup-body">
-        {section === 'courses' && <Courses onChanged={onChanged} />}
+        {section === 'courses' && <Courses />}
         {section === 'events' && <Events onChanged={onChanged} prefill={null} />}
         {section === 'import' && <Import onChanged={onChanged} />}
         {section === 'google' && <GoogleSync />}
