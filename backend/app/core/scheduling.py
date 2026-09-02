@@ -40,7 +40,7 @@ class BusyInterval:
     end: datetime
     weight: float
     label: str
-    kind: str  # "course" | "event"
+    kind: str  # "course" | "exam" | "event" | "ours"
 
     def overlap_with(self, start: datetime, end: datetime) -> timedelta:
         """Length of the intersection with ``[start, end)``; zero if disjoint."""

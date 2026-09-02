@@ -253,3 +253,66 @@ class TestImport:
 
 def test_health(client):
     assert client.get("/health").json() == {"status": "ok"}
+
+
+def _book(client, starts="2026-10-14T19:00:00", ends="2026-10-14T20:00:00", ours=True):
+    return client.post(
+        "/api/events",
+        json={
+            "title": "Callout",
+            "organization": "",
+            "location": "",
+            "starts_at": starts,
+            "ends_at": ends,
+            "expected_attendance": 0,
+            "audience_fraction": 1,
+            "source": "manual",
+            "is_ours": ours,
+        },
+    ).json()
+
+
+def test_our_own_booking_appears_on_the_calendar(client):
+    """It used to be filtered out, so a booked event vanished from the grid."""
+    _book(client)
+
+    busy = client.get(
+        "/api/busy", params={"start": "2026-10-14T00:00:00", "end": "2026-10-15T00:00:00"}
+    ).json()
+
+    ours = [b for b in busy if b["kind"] == "ours"]
+    assert len(ours) == 1
+    assert ours[0]["label"] == "BM: Callout"
+
+
+def test_competing_events_stay_their_own_kind(client):
+    _book(client, ours=False)
+
+    busy = client.get(
+        "/api/busy", params={"start": "2026-10-14T00:00:00", "end": "2026-10-15T00:00:00"}
+    ).json()
+
+    assert [b["kind"] for b in busy] == ["event"]
+
+
+def test_our_own_booking_conflicts_with_a_later_search(client):
+    """Double-booking ourselves is the most obvious clash there is."""
+    request = {
+        "window_start": "2026-10-14",
+        "window_end": "2026-10-14",
+        "duration_minutes": 60,
+        "earliest": "19:00",
+        "latest": "20:00",
+        "weekdays": [2],
+        "step_minutes": 60,
+        "limit": 5,
+    }
+
+    before = client.post("/api/schedule/rank", json=request).json()["slots"]
+    assert before[0]["is_clear"]
+
+    _book(client)
+
+    after = client.post("/api/schedule/rank", json=request).json()["slots"]
+    assert not after[0]["is_clear"]
+    assert "BM: Callout" in [c["label"] for c in after[0]["conflicts"]]

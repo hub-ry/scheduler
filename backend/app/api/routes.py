@@ -4,6 +4,7 @@ The interesting endpoint is ``POST /api/schedule/rank``. Everything else exists
 to feed it: courses carry the weights, exams and events are the competition.
 """
 
+from dataclasses import replace
 from datetime import datetime, time, timedelta
 from typing import Annotated
 
@@ -97,10 +98,17 @@ def _collect_busy(
         select(ClubEvent).where(
             ClubEvent.starts_at < window_end,
             ClubEvent.ends_at > window_start,
-            ClubEvent.is_ours == False,  # noqa: E712 - SQL expression, not a bool test
         )
     ).all()
-    intervals.extend(event_to_interval(e) for e in events)
+    for event in events:
+        interval = event_to_interval(event)
+        if event.is_ours:
+            # Our own bookings used to be excluded outright, which meant an
+            # event you had just booked did not appear on the calendar at all.
+            # They belong on the grid, and they belong in the ranking too - the
+            # thing a slot most obviously clashes with is another of our events.
+            interval = replace(interval, kind="ours", label=f"BM: {event.title}")
+        intervals.append(interval)
 
     return intervals, sorted(contributing)
 

@@ -245,33 +245,37 @@ export function Schedule({ onChanged, refreshKey }: Props) {
         />
 
         <div className="legend">
-          <span className="proposed">Your event</span>
+          <span className="proposed">Considering</span>
+          <span className="ours">BM event</span>
           <span className="exam">Exam</span>
           <span className="event">Competing event</span>
-          <span className="course">Class meeting</span>
         </div>
 
         {pushed && <div className="notice ok">{pushed}</div>}
 
         <div className="plan-commit">
-          <div className="field">
-            <label htmlFor="event-idea">What are you booking?</label>
-            <select
-              id="event-idea"
-              value={ideaId}
-              disabled={pushing}
-              onChange={(event) =>
-                setIdeaId(event.target.value === '' ? '' : Number(event.target.value))
-              }
-            >
-              <option value="">Something else…</option>
-              {unscheduled.map((idea) => (
-                <option key={idea.id} value={idea.id}>
-                  {idea.title}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Only worth a control once there is something in it. With an empty
+              board this was a dropdown whose only option was "Something else". */}
+          {unscheduled.length > 0 && (
+            <div className="field">
+              <label htmlFor="event-idea">From your ideas</label>
+              <select
+                id="event-idea"
+                value={ideaId}
+                disabled={pushing}
+                onChange={(event) =>
+                  setIdeaId(event.target.value === '' ? '' : Number(event.target.value))
+                }
+              >
+                <option value="">Something else…</option>
+                {unscheduled.map((idea) => (
+                  <option key={idea.id} value={idea.id}>
+                    {idea.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {ideaId === '' && (
             <div className="field">

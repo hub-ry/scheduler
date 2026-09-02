@@ -122,9 +122,9 @@ export function CalendarTab({ refreshKey, onChanged }: Props) {
       </div>
 
       <div className="legend">
+        <span className="ours">BM event</span>
         <span className="exam">Exam</span>
         <span className="event">Competing event</span>
-        <span className="course">Class meeting</span>
       </div>
     </div>
   )

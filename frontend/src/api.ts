@@ -67,13 +67,13 @@ export interface Busy {
   start: string
   end: string
   label: string
-  kind: 'course' | 'exam' | 'event'
+  kind: 'course' | 'exam' | 'event' | 'ours'
   weight: number
 }
 
 export interface Conflict {
   label: string
-  kind: 'course' | 'exam' | 'event'
+  kind: 'course' | 'exam' | 'event' | 'ours'
   weight: number
   overlap_minutes: number
   overlap_fraction: number

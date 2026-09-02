@@ -122,7 +122,7 @@ class EventOut(EventIn):
 
 class ConflictOut(BaseModel):
     label: str
-    kind: Literal["course", "event", "exam"]
+    kind: Literal["course", "event", "exam", "ours"]
     weight: float
     overlap_minutes: float
     overlap_fraction: float

@@ -28,6 +28,9 @@
   --exam: #dc2626;
   --event: #7c3aed;
   --course: #0891b2;
+  /* Our own bookings. Green so the thing you put on the calendar reads as
+   * settled rather than as one more hazard to schedule around. */
+  --ours: #15803d;
 
   --radius: 10px;
   --radius-sm: 6px;
@@ -58,6 +61,7 @@
     --exam: #ef4444;
     --event: #a78bfa;
     --course: #22d3ee;
+    --ours: #4ade80;
 
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 16px rgb(0 0 0 / 0.3);
   }
@@ -838,6 +842,18 @@ button.ghost.icon {
 .month-event.kind-event { color: var(--event); }
 .month-event.kind-course { color: var(--course); }
 
+/* Ours is the only filled chip among the real events, because it is the only
+ * one we put there - everything else is something to schedule around. */
+.month-event.kind-ours {
+  background: var(--ours);
+  color: #fff;
+  font-weight: 600;
+}
+
+.month-event.kind-ours .dot {
+  background: #fff;
+}
+
 /* The proposed slot is the only filled chip on the grid, because it is the one
  * thing on screen that does not exist yet. */
 .month-event.is-preview {
@@ -905,6 +921,10 @@ button.ghost.icon {
 
 .legend .proposed::before {
   background: var(--accent);
+}
+
+.legend .ours::before {
+  background: var(--ours);
 }
 
 button.linkish {
