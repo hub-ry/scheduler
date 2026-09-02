@@ -60,7 +60,14 @@ def test_every_data_route_is_behind_the_gate(client, gated):
     """
     from app.main import app
 
-    open_paths = {"/api/session", "/health", "/openapi.json", "/docs", "/redoc", "/docs/oauth2-redirect"}
+    open_paths = {
+        "/api/session",
+        "/health",
+        "/openapi.json",
+        "/docs",
+        "/redoc",
+        "/docs/oauth2-redirect",
+    }
     for route in app.routes:
         path = getattr(route, "path", "")
         if not path.startswith("/api/") or path in open_paths:
