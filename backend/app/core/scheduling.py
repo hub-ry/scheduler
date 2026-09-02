@@ -82,6 +82,10 @@ class SlotConstraints:
     latest: time = time(22, 0)
     weekdays: frozenset[Weekday] = frozenset(Weekday)
     step: timedelta = timedelta(minutes=30)
+    #: Days the university is closed or on break. Unlike a busy interval these
+    #: are not scored against - an event simply cannot happen, so the slots are
+    #: never offered rather than offered with a large penalty.
+    blackout_days: frozenset[date] = frozenset()
 
 
 def expand_course(
@@ -137,7 +141,10 @@ def candidate_slots(
     cursor = window_start
     while cursor + constraints.duration <= window_end:
         end = cursor + constraints.duration
-        in_days = Weekday(cursor.weekday()) in constraints.weekdays
+        in_days = (
+            Weekday(cursor.weekday()) in constraints.weekdays
+            and cursor.date() not in constraints.blackout_days
+        )
         # An event may not start before ``earliest`` nor run past ``latest``,
         # and must not straddle midnight into a day we did not vet.
         within_hours = (

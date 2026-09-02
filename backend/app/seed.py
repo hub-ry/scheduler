@@ -16,7 +16,7 @@ from pathlib import Path
 
 from sqlmodel import Session, select
 
-from app.core.models import Course, Exam, Package, Term
+from app.core.models import AcademicDate, Course, Exam, Package, Term
 from app.core.registrar import parse_exam_table
 from app.db import create_db_and_tables, engine
 
@@ -86,11 +86,13 @@ def seed(session: Session) -> dict[str, int]:
     session.commit()
 
     _seed_packages(session, config, courses)
+    academic = _seed_academic_dates(session)
 
     return {
         "courses": len(courses),
         "exams_parsed": len(parsed),
         "exams_loaded": len(relevant),
+        "academic_dates": academic,
         "courses_without_enrollment": sum(1 for c in courses.values() if c.enrollment is None),
     }
 
@@ -110,6 +112,43 @@ def _seed_packages(session: Session, config: dict, courses: dict[str, Course]) -
         package.courses = [courses[code] for code in spec["courses"] if code in courses]
         session.add(package)
     session.commit()
+
+
+def _seed_academic_dates(session: Session) -> int:
+    """Load the published academic calendar - breaks, closures, milestones.
+
+    Rows are keyed by (label, start) and updated in place, so re-seeding after
+    the registrar revises a date corrects the existing row instead of leaving a
+    stale duplicate that would keep blocking a day the university reopened.
+    Hand-entered rows (any other ``source``) are never touched.
+    """
+    path = DATA_DIR / "academic_calendar.json"
+    if not path.exists():
+        return 0
+
+    entries = json.loads(path.read_text())["dates"]
+    seeded = {(e["label"], date.fromisoformat(e["start"])) for e in entries}
+
+    for stale in session.exec(select(AcademicDate).where(AcademicDate.source == "registrar")).all():
+        if (stale.label, stale.start_date) not in seeded:
+            session.delete(stale)
+
+    for entry in entries:
+        start = date.fromisoformat(entry["start"])
+        row = session.exec(
+            select(AcademicDate).where(
+                AcademicDate.label == entry["label"], AcademicDate.start_date == start
+            )
+        ).first()
+        if row is None:
+            row = AcademicDate(label=entry["label"], start_date=start)
+            session.add(row)
+        row.end_date = date.fromisoformat(entry["end"])
+        row.blocks_events = entry.get("blocks_events", True)
+        row.note = entry.get("note", "")
+        row.source = "registrar"
+    session.commit()
+    return len(entries)
 
 
 def main() -> None:

@@ -1,0 +1,19 @@
+{
+  "term": { "season": "Fall", "year": 2026 },
+  "_comment": "Transcribed from the registrar's published 2026 academic calendar. blocks_events=true means no event may be scheduled that day.",
+  "dates": [
+    { "label": "Fall term classes begin", "start": "2026-08-24", "end": "2026-08-24", "blocks_events": false },
+    { "label": "Labor Day", "start": "2026-09-07", "end": "2026-09-07", "blocks_events": true, "note": "University closed - no events" },
+    { "label": "Last day to apply to graduate (winter)", "start": "2026-09-18", "end": "2026-09-18", "blocks_events": false },
+    { "label": "Fall break", "start": "2026-10-12", "end": "2026-10-13", "blocks_events": true, "note": "Fall break - students away, no events" },
+    { "label": "Thanksgiving break", "start": "2026-11-25", "end": "2026-11-28", "blocks_events": true, "note": "Thanksgiving break - no events" },
+    { "label": "Fall term classes end", "start": "2026-12-12", "end": "2026-12-12", "blocks_events": false },
+    { "label": "Fall term final exams", "start": "2026-12-14", "end": "2026-12-19", "blocks_events": true, "note": "Finals week - no events" },
+    { "label": "Fall term ends", "start": "2026-12-19", "end": "2026-12-19", "blocks_events": false },
+    { "label": "Winter commencement", "start": "2026-12-19", "end": "2026-12-20", "blocks_events": true, "note": "Winter commencement - no events" },
+    { "label": "Winter term classes begin", "start": "2026-12-21", "end": "2026-12-21", "blocks_events": false },
+    { "label": "Christmas holiday", "start": "2026-12-24", "end": "2026-12-25", "blocks_events": true, "note": "University closed - no events" },
+    { "label": "Winter Recess", "start": "2026-12-28", "end": "2026-12-30", "blocks_events": true, "note": "University closed - no events" },
+    { "label": "President's Designated Holiday", "start": "2026-12-31", "end": "2026-12-31", "blocks_events": true, "note": "University closed - no events" }
+  ]
+}

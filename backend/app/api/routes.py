@@ -22,7 +22,7 @@ from app.auth import (
     require_session,
     token_is_valid,
 )
-from app.core.models import ClubEvent, Course, EventIdea, Exam, Package, Term
+from app.core.models import AcademicDate, ClubEvent, Course, EventIdea, Exam, Package, Term
 from app.core.registrar import parse_exam_table
 from app.core.scheduling import (
     BusyInterval,
@@ -53,6 +53,60 @@ def _exam_interval(exam: Exam, course: Course) -> BusyInterval:
         weight=course.weight,
         label=f"{course.code} {exam.kind}",
         kind="exam",
+    )
+
+
+def _academic_dates(session: Session, window_start: datetime, window_end: datetime):
+    """Academic-calendar rows touching the window, earliest first."""
+    return session.exec(
+        select(AcademicDate)
+        .where(
+            AcademicDate.start_date <= window_end.date(),
+            AcademicDate.end_date >= window_start.date(),
+        )
+        .order_by(AcademicDate.start_date)
+    ).all()
+
+
+def _academic_blocks(
+    session: Session, window_start: datetime, window_end: datetime
+) -> list[schemas.BusyOut]:
+    """Calendar chips for breaks and milestones - one per day of a span.
+
+    Emitted per day rather than as one interval per row because the month grid
+    buckets blocks by their start day, so a four-day break drawn as a single
+    block would appear only on the Wednesday.
+
+    These are not :class:`BusyInterval`s: a closed day is not weighted
+    competition for our audience, it is a day that cannot be used at all, and
+    the ranking honours it by never offering those slots (see
+    ``SlotConstraints.blackout_days``). Their weight is therefore zero.
+    """
+    blocks: list[schemas.BusyOut] = []
+    for entry in _academic_dates(session, window_start, window_end):
+        for day in entry.days():
+            if not window_start.date() <= day <= window_end.date():
+                continue
+            blocks.append(
+                schemas.BusyOut(
+                    start=datetime.combine(day, time.min),
+                    end=datetime.combine(day, time.max),
+                    label=entry.label,
+                    kind="closed" if entry.blocks_events else "academic",
+                    weight=0.0,
+                    detail=entry.note,
+                )
+            )
+    return blocks
+
+
+def _blackout_days(session: Session, window_start: datetime, window_end: datetime) -> frozenset:
+    """Every date in the window on which we are not allowed to host."""
+    return frozenset(
+        day
+        for entry in _academic_dates(session, window_start, window_end)
+        if entry.blocks_events
+        for day in entry.days()
     )
 
 
@@ -370,9 +424,27 @@ def list_busy(start: datetime, end: datetime, session: SessionDep):
     if end <= start:
         raise HTTPException(422, "end must be after start")
     intervals, _ = _collect_busy(session, start, end)
-    return [
+    blocks = [
         schemas.BusyOut(start=i.start, end=i.end, label=i.label, kind=i.kind, weight=i.weight)
-        for i in sorted(intervals, key=lambda i: i.start)
+        for i in intervals
+    ] + _academic_blocks(session, start, end)
+    return sorted(blocks, key=lambda b: (b.start, b.kind != "closed"))
+
+
+@guarded.get("/academic-dates", response_model=list[schemas.AcademicDateOut])
+def list_academic_dates(session: SessionDep):
+    """The academic calendar, so the UI can explain why a day is unavailable."""
+    rows = session.exec(select(AcademicDate).order_by(AcademicDate.start_date)).all()
+    return [
+        schemas.AcademicDateOut(
+            id=row.id,
+            label=row.label,
+            start_date=row.start_date,
+            end_date=row.end_date,
+            blocks_events=row.blocks_events,
+            note=row.note,
+        )
+        for row in rows
     ]
 
 
@@ -393,6 +465,7 @@ def rank(payload: schemas.RankRequest, session: SessionDep):
         latest=payload.latest,
         weekdays=frozenset(payload.weekdays),
         step=timedelta(minutes=payload.step_minutes),
+        blackout_days=_blackout_days(session, window_start, window_end),
     )
     considered = len(candidate_slots(window_start, window_end, constraints))
     ranked = rank_slots(intervals, window_start, window_end, constraints, limit=payload.limit)

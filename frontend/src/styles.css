@@ -31,6 +31,12 @@
   /* Our own bookings. Green so the thing you put on the calendar reads as
    * settled rather than as one more hazard to schedule around. */
   --ours: #15803d;
+  /* Days the university is closed or on break. Deeper than --exam, which is a
+   * hazard to schedule around, because this is a day that is simply not
+   * available at all. */
+  --closed: #b91c1c;
+  --closed-soft: #fef2f2;
+  --academic: #b45309;
 
   --radius: 10px;
   --radius-sm: 6px;
@@ -62,6 +68,9 @@
     --event: #a78bfa;
     --course: #22d3ee;
     --ours: #4ade80;
+    --closed: #f87171;
+    --closed-soft: #2a1013;
+    --academic: #fbbf24;
 
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 16px rgb(0 0 0 / 0.3);
   }
@@ -585,6 +594,9 @@ button.ghost:hover {
 .legend .course {
   color: var(--course);
 }
+.legend .closed {
+  color: var(--closed);
+}
 
 /* ---------- tables ---------- */
 
@@ -762,6 +774,9 @@ button.ghost.icon {
 
 .month-cell {
   display: flex;
+  /* A long label used to bleed across the cell border into the next day, which
+   * read as an event on the wrong date. The cell is the hard boundary. */
+  overflow: hidden;
   flex-direction: column;
   gap: 0.2rem;
   min-height: 104px;
@@ -819,15 +834,31 @@ button.ghost.icon {
 .month-event {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  max-width: 100%;
+  /* Tight: the cell is narrow and the course number is the part that matters,
+   * so chrome gives way before the label does. */
+  gap: 0.22rem;
   min-width: 0;
-  padding: 0.1rem 0.25rem;
+  padding: 0.1rem 0.15rem;
   border-radius: 4px;
   font-size: 0.72rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--text);
+}
+
+/* The label truncates, not the chip: a bare text node in a flex row cannot
+ * ellipsise, so a long course name was being sliced mid-character. */
+.month-event-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.month-event.kind-closed .month-event-label {
+  white-space: normal;
 }
 
 .month-event .dot {
@@ -841,6 +872,27 @@ button.ghost.icon {
 .month-event.kind-exam { color: var(--exam); }
 .month-event.kind-event { color: var(--event); }
 .month-event.kind-course { color: var(--course); }
+.month-event.kind-academic { color: var(--academic); }
+
+/* A closed day is stated once, across the cell, rather than repeated per
+ * source - there is nothing to compare on a day we cannot use. */
+.month-cell.is-closed {
+  background: var(--closed-soft);
+}
+
+.month-cell.is-closed .month-date {
+  color: var(--closed);
+}
+
+.month-event.kind-closed {
+  background: var(--closed);
+  color: #fff;
+  font-weight: 600;
+  /* The reason has to survive a narrow cell, so it wraps rather than being
+   * truncated to a red smear with no word on it. */
+  white-space: normal;
+  line-height: 1.25;
+}
 
 /* Ours is the only filled chip among the real events, because it is the only
  * one we put there - everything else is something to schedule around. */

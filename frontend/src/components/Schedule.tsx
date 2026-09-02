@@ -267,6 +267,7 @@ export function Schedule({ onChanged, refreshKey }: Props) {
           <span className="ours">BM event</span>
           <span className="exam">Exam</span>
           <span className="event">Competing event</span>
+          <span className="closed">Closed / break - no events</span>
         </div>
 
         {pushed && <div className="notice ok">{pushed}</div>}

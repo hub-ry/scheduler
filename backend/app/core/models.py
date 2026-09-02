@@ -17,7 +17,7 @@ who are unavailable because of it. That is what makes slots comparable.
 # resolves Relationship() targets from the runtime annotations, and stringised
 # annotations make it see a bare generic it cannot map.
 
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from enum import IntEnum
 
 from sqlmodel import Field, Relationship, SQLModel
@@ -203,3 +203,34 @@ class Exam(SQLModel, table=True):
     section: str = ""
 
     course: Course | None = Relationship(back_populates="exams")
+
+
+class AcademicDate(SQLModel, table=True):
+    """A date on the university's academic calendar, e.g. "Fall break".
+
+    Two things live in one table because the registrar publishes them in one
+    list and they are read together: days we simply cannot host on (breaks and
+    closures - ``blocks_events``), and milestones worth seeing beside them
+    (term start, finals week) that constrain nothing by themselves.
+
+    Stored as an inclusive ``[start_date, end_date]`` span rather than one row
+    per day, because that is how they are published ("Nov. 25-28") and because
+    a multi-day break should read as one thing on the calendar.
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+    label: str
+    start_date: date = Field(index=True)
+    end_date: date
+    #: True for breaks and closures: no event may be scheduled on these days.
+    blocks_events: bool = True
+    #: Shown on the block, e.g. "University closed - no events".
+    note: str = ""
+    source: str = "registrar"
+
+    def covers(self, day: date) -> bool:
+        return self.start_date <= day <= self.end_date
+
+    def days(self) -> list[date]:
+        span = (self.end_date - self.start_date).days
+        return [self.start_date + timedelta(days=offset) for offset in range(span + 1)]

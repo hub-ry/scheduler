@@ -67,8 +67,15 @@ export interface Busy {
   start: string
   end: string
   label: string
-  kind: 'course' | 'exam' | 'event' | 'ours'
+  /**
+   * `closed` is a day the university is shut or on break - not weighted
+   * competition but a day we cannot host on at all. `academic` is a calendar
+   * milestone shown for context, which blocks nothing.
+   */
+  kind: 'course' | 'exam' | 'event' | 'ours' | 'closed' | 'academic'
   weight: number
+  /** Why the day is unavailable, e.g. "University closed - no events". */
+  detail?: string
 }
 
 export interface Conflict {

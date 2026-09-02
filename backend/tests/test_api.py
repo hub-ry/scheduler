@@ -316,3 +316,49 @@ def test_our_own_booking_conflicts_with_a_later_search(client):
     after = client.post("/api/schedule/rank", json=request).json()["slots"]
     assert not after[0]["is_clear"]
     assert "BM: Callout" in [c["label"] for c in after[0]["conflicts"]]
+
+
+class TestAcademicCalendar:
+    """Breaks and closures: days the ranking must refuse to offer at all."""
+
+    def _request(self, **overrides):
+        return {
+            "window_start": "2026-10-09",
+            "window_end": "2026-10-16",
+            "duration_minutes": 60,
+            "earliest": "17:00:00",
+            "latest": "22:00:00",
+            "step_minutes": 60,
+        } | overrides
+
+    def test_the_seeded_calendar_is_exposed(self, client):
+        rows = client.get("/api/academic-dates").json()
+        fall_break = next(r for r in rows if r["label"] == "Fall break")
+        assert (fall_break["start_date"], fall_break["end_date"]) == ("2026-10-12", "2026-10-13")
+        assert fall_break["blocks_events"] is True
+        # A milestone is on the calendar for context but blocks nothing.
+        milestone = next(r for r in rows if r["label"] == "Fall term classes begin")
+        assert milestone["blocks_events"] is False
+
+    def test_no_slot_is_offered_during_fall_break(self, client):
+        body = client.post("/api/schedule/rank", json=self._request(limit=200)).json()
+        days = {s["start"][:10] for s in body["slots"]}
+        assert "2026-10-12" not in days and "2026-10-13" not in days
+        assert "2026-10-14" in days
+
+    def test_break_days_are_drawn_on_the_calendar(self, client):
+        blocks = client.get(
+            "/api/busy", params={"start": "2026-10-01T00:00:00", "end": "2026-11-01T00:00:00"}
+        ).json()
+        closed = [b for b in blocks if b["kind"] == "closed"]
+        # One block per day of the span, so a multi-day break shows on each day.
+        assert {b["start"][:10] for b in closed} >= {"2026-10-12", "2026-10-13"}
+        assert all(b["detail"] for b in closed)
+
+    def test_reseeding_does_not_duplicate_the_calendar(self, session):
+        from app.core.models import AcademicDate
+
+        seed(session)
+        seed(session)
+        rows = session.exec(select(AcademicDate)).all()
+        assert len(rows) == len({(r.label, r.start_date) for r in rows})

@@ -202,6 +202,17 @@ class BusyOut(BaseModel):
     detail: str = ""
 
 
+class AcademicDateOut(BaseModel):
+    """A break, closure, or milestone from the university academic calendar."""
+
+    id: int
+    label: str
+    start_date: date
+    end_date: date
+    blocks_events: bool
+    note: str
+
+
 class ImportRequest(BaseModel):
     text: str = Field(min_length=1)
     term_season: str = ""

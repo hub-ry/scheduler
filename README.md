@@ -8,4 +8,7 @@
 - output to google calender and displayed via google Oauth + google calender api
 
 
+- university academic calendar (breaks, closures, finals, holidays) is loaded from backend/data/academic_calendar.json
+  - those days show red on the calendar with the reason, and the ranker never offers a slot on them
+
 - hosted via cloudflare tunnel so i can access any time with password

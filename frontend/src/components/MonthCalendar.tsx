@@ -112,6 +112,16 @@ export function MonthCalendar({
 
   const previewDay = preview ? parseLocal(preview.start).toDateString() : null
 
+  // A closed day is not "busy", it is unusable, so the whole cell is tinted
+  // rather than the day carrying one more chip among the classes and exams.
+  const closedDays = useMemo(() => {
+    const days = new Map<string, Busy>()
+    for (const block of blocks) {
+      if (block.kind === 'closed') days.set(parseLocal(block.start).toDateString(), block)
+    }
+    return days
+  }, [blocks])
+
   return (
     <div className={`month${dense ? ' is-dense' : ''}`}>
       <div className="month-head">
@@ -127,12 +137,14 @@ export function MonthCalendar({
           const key = day.toDateString()
           const outside = day.getMonth() !== monthStart.getMonth()
           const showsPreview = key === previewDay
+          const closed = closedDays.get(key)
           const inRange = dragging !== null && day >= dragging.start && day <= dragging.end
           const classes = [
             'month-cell',
             outside && 'is-outside',
             isSameDay(day, today) && 'is-today',
             showsPreview && 'has-preview',
+            closed && 'is-closed',
             inRange && 'in-range',
             inRange && dragging && isSameDay(day, dragging.start) && 'range-start',
             inRange && dragging && isSameDay(day, dragging.end) && 'range-end',
@@ -168,24 +180,49 @@ export function MonthCalendar({
             >
               <div className="month-date">{day.getDate()}</div>
               <div className="month-events">
+                {closed && (
+                  <div
+                    className="month-event kind-closed"
+                    title={closed.detail || `${closed.label} - no events`}
+                  >
+                    <span className="month-event-label">{closed.label}</span>
+                  </div>
+                )}
                 {showsPreview && preview && (
                   <div className="month-event is-preview" title="The slot you are considering">
                     <span className="dot" />
-                    {formatTime(parseLocal(preview.start))} {preview.label}
+                    <span className="month-event-label">
+                      {formatTime(parseLocal(preview.start))} {preview.label}
+                    </span>
                   </div>
                 )}
-                {(byDay.get(key) ?? []).map((block) => (
-                  <div
-                    key={`${block.label}-${block.start}`}
-                    className={`month-event kind-${block.kind}`}
-                    title={`${block.label}\n${formatTime(parseLocal(block.start))} - ${formatTime(
-                      parseLocal(block.end),
-                    )}`}
-                  >
-                    <span className="dot" />
-                    {formatTime(parseLocal(block.start))} {block.label}
-                  </div>
-                ))}
+                {(byDay.get(key) ?? []).map((block) =>
+                  block.kind === 'closed' ? null : block.kind === 'academic' ? (
+                    // A milestone owns the whole day, so a start time would be
+                    // meaningless noise beside it.
+                    <div
+                      key={`${block.label}-${block.start}`}
+                      className="month-event kind-academic"
+                      title={block.detail || block.label}
+                    >
+                      <span className="dot" />
+                      <span className="month-event-label">{block.label}</span>
+                    </div>
+                  ) : (
+                    <div
+                      key={`${block.label}-${block.start}`}
+                      className={`month-event kind-${block.kind}`}
+                      title={`${block.label}\n${formatTime(parseLocal(block.start))} - ${formatTime(
+                        parseLocal(block.end),
+                      )}`}
+                    >
+                      <span className="dot" />
+                      <span className="month-event-label">
+                        {formatTime(parseLocal(block.start))} {block.label}
+                      </span>
+                    </div>
+                  ),
+                )}
               </div>
             </div>
           )
