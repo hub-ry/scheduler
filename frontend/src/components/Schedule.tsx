@@ -215,7 +215,10 @@ export function Schedule({ onChanged, refreshKey }: Props) {
           <button
             className="ghost"
             type="button"
-            onClick={() => setAddingCompeting(true)}
+            // Prefilled from the current selection, so the flow is select a
+            // day, press this, type a name - rather than re-entering a date
+            // that is already highlighted on the grid.
+            onClick={() => setAddingCompeting(parseLocal(`${request.window_start}T00:00:00`))}
             disabled={addingCompeting !== null}
           >
             + Competing event
