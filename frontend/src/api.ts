@@ -127,9 +127,16 @@ export class ApiError extends Error {
   }
 }
 
+export interface Session {
+  required: boolean
+  authenticated: boolean
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
+    // The gate is a cookie, and a same-origin fetch only sends one when asked.
+    credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json', ...init?.headers },
   })
   if (!response.ok) {
@@ -163,6 +170,13 @@ async function describeFailure(response: Response): Promise<string> {
 }
 
 export const api = {
+  session: () => request<Session>('/api/session'),
+
+  signIn: (password: string) =>
+    request<Session>('/api/session', { method: 'POST', body: JSON.stringify({ password }) }),
+
+  signOut: () => request<void>('/api/session', { method: 'DELETE' }),
+
   courses: () => request<Course[]>('/api/courses'),
 
   updateCourse: (id: number, patch: Partial<Pick<Course, 'enrollment' | 'audience_fraction'>>) =>

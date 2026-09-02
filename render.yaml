@@ -1,0 +1,27 @@
+# Render blueprint: one free web service, backed by Neon Postgres.
+#
+# Free-tier facts worth knowing before you rely on it:
+#   - The service sleeps after 15 minutes idle. The next visit takes 30-60s to
+#     wake. Fine for a tool opened a few times a week.
+#   - Free instances have no persistent disk, which is why the database is
+#     Neon rather than the SQLite file used locally. Nothing is stored in the
+#     container.
+
+services:
+  - type: web
+    name: scheduler
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      # Paste the Neon connection string here in the dashboard.
+      - key: SCHEDULER_DATABASE_URL
+        sync: false
+      # The shared password. Change it and everyone is signed out.
+      - key: SCHEDULER_PASSWORD
+        sync: false
+      - key: SCHEDULER_SECURE_COOKIE
+        value: "true"
+      - key: SCHEDULER_SEED_ON_START
+        value: "true"

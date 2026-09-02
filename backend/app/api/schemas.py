@@ -33,6 +33,17 @@ class CourseUpdate(BaseModel):
     title: str | None = None
 
 
+class SessionOut(BaseModel):
+    """Whether this deployment is gated, and whether the caller is through it."""
+
+    required: bool
+    authenticated: bool
+
+
+class SignIn(BaseModel):
+    password: str
+
+
 class PackageOut(BaseModel):
     id: int
     name: str

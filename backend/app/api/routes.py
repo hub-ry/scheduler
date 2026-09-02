@@ -4,14 +4,24 @@ The interesting endpoint is ``POST /api/schedule/rank``. Everything else exists
 to feed it: courses carry the weights, exams and events are the competition.
 """
 
+import os
 from dataclasses import replace
 from datetime import datetime, time, timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
 from sqlmodel import Session, select
 
 from app.api import schemas
+from app.auth import (
+    COOKIE_NAME,
+    SESSION_SECONDS,
+    configured_password,
+    issue_token,
+    password_matches,
+    require_session,
+    token_is_valid,
+)
 from app.core.models import ClubEvent, Course, EventIdea, Exam, Package, Term
 from app.core.registrar import parse_exam_table
 from app.core.scheduling import (
@@ -25,6 +35,11 @@ from app.core.scheduling import (
 from app.db import get_session
 
 router = APIRouter(prefix="/api")
+
+#: Everything except the session endpoints themselves sits behind the gate.
+#: Applied to the router rather than route by route, so a new endpoint is
+#: protected by default instead of protected only if someone remembers.
+guarded = APIRouter(prefix="/api", dependencies=[Depends(require_session)])
 
 #: Declared once rather than as a per-route default, so the dependency is a
 #: module-level singleton instead of a call evaluated in an argument default.
@@ -113,7 +128,7 @@ def _collect_busy(
     return intervals, sorted(contributing)
 
 
-@router.get("/courses", response_model=list[schemas.CourseOut])
+@guarded.get("/courses", response_model=list[schemas.CourseOut])
 def list_courses(session: SessionDep):
     courses = session.exec(select(Course).order_by(Course.code)).all()
     return [
@@ -132,7 +147,7 @@ def list_courses(session: SessionDep):
     ]
 
 
-@router.patch("/courses/{course_id}", response_model=schemas.CourseOut)
+@guarded.patch("/courses/{course_id}", response_model=schemas.CourseOut)
 def update_course(course_id: int, payload: schemas.CourseUpdate, session: SessionDep):
     course = session.get(Course, course_id)
     if course is None:
@@ -182,13 +197,13 @@ def _resolve_courses(session: Session, course_ids: list[int]) -> list[Course]:
     return courses
 
 
-@router.get("/packages", response_model=list[schemas.PackageOut])
+@guarded.get("/packages", response_model=list[schemas.PackageOut])
 def list_packages(session: SessionDep):
     packages = session.exec(select(Package).order_by(Package.name)).all()
     return [_package_out(p) for p in packages]
 
 
-@router.post("/packages", response_model=schemas.PackageOut, status_code=201)
+@guarded.post("/packages", response_model=schemas.PackageOut, status_code=201)
 def create_package(payload: schemas.PackageIn, session: SessionDep):
     package = Package(name=payload.name, description=payload.description)
     package.courses = _resolve_courses(session, payload.course_ids)
@@ -198,7 +213,7 @@ def create_package(payload: schemas.PackageIn, session: SessionDep):
     return _package_out(package)
 
 
-@router.patch("/packages/{package_id}", response_model=schemas.PackageOut)
+@guarded.patch("/packages/{package_id}", response_model=schemas.PackageOut)
 def update_package(package_id: int, payload: schemas.PackageUpdate, session: SessionDep):
     package = session.get(Package, package_id)
     if package is None:
@@ -215,7 +230,7 @@ def update_package(package_id: int, payload: schemas.PackageUpdate, session: Ses
     return _package_out(package)
 
 
-@router.delete("/packages/{package_id}", status_code=204)
+@guarded.delete("/packages/{package_id}", status_code=204)
 def delete_package(package_id: int, session: SessionDep):
     package = session.get(Package, package_id)
     if package is None:
@@ -238,13 +253,13 @@ def _idea_out(idea: EventIdea, session: Session) -> schemas.IdeaOut:
     )
 
 
-@router.get("/ideas", response_model=list[schemas.IdeaOut])
+@guarded.get("/ideas", response_model=list[schemas.IdeaOut])
 def list_ideas(session: SessionDep):
     ideas = session.exec(select(EventIdea).order_by(EventIdea.position, EventIdea.id)).all()
     return [_idea_out(i, session) for i in ideas]
 
 
-@router.post("/ideas", response_model=schemas.IdeaOut, status_code=201)
+@guarded.post("/ideas", response_model=schemas.IdeaOut, status_code=201)
 def create_idea(payload: schemas.IdeaIn, session: SessionDep):
     # New cards go to the bottom, where you were looking when you added one.
     last = session.exec(select(EventIdea).order_by(EventIdea.position.desc())).first()
@@ -259,7 +274,7 @@ def create_idea(payload: schemas.IdeaIn, session: SessionDep):
     return _idea_out(idea, session)
 
 
-@router.patch("/ideas/{idea_id}", response_model=schemas.IdeaOut)
+@guarded.patch("/ideas/{idea_id}", response_model=schemas.IdeaOut)
 def update_idea(idea_id: int, payload: schemas.IdeaUpdate, session: SessionDep):
     idea = session.get(EventIdea, idea_id)
     if idea is None:
@@ -276,7 +291,7 @@ def update_idea(idea_id: int, payload: schemas.IdeaUpdate, session: SessionDep):
     return _idea_out(idea, session)
 
 
-@router.delete("/ideas/{idea_id}", status_code=204)
+@guarded.delete("/ideas/{idea_id}", status_code=204)
 def delete_idea(idea_id: int, session: SessionDep):
     idea = session.get(EventIdea, idea_id)
     if idea is None:
@@ -287,7 +302,7 @@ def delete_idea(idea_id: int, session: SessionDep):
     session.commit()
 
 
-@router.post("/ideas/reorder", response_model=list[schemas.IdeaOut])
+@guarded.post("/ideas/reorder", response_model=list[schemas.IdeaOut])
 def reorder_ideas(payload: schemas.ReorderRequest, session: SessionDep):
     """Rewrite every position from one ordered list of ids.
 
@@ -305,7 +320,7 @@ def reorder_ideas(payload: schemas.ReorderRequest, session: SessionDep):
     return [_idea_out(ideas[i], session) for i in payload.ids]
 
 
-@router.get("/exams", response_model=list[schemas.ExamOut])
+@guarded.get("/exams", response_model=list[schemas.ExamOut])
 def list_exams(session: SessionDep):
     exams = session.exec(select(Exam).order_by(Exam.starts_at)).all()
     courses = {c.id: c for c in session.exec(select(Course)).all()}
@@ -325,13 +340,13 @@ def list_exams(session: SessionDep):
     ]
 
 
-@router.get("/events", response_model=list[schemas.EventOut])
+@guarded.get("/events", response_model=list[schemas.EventOut])
 def list_events(session: SessionDep):
     events = session.exec(select(ClubEvent).order_by(ClubEvent.starts_at)).all()
     return [schemas.EventOut(**e.model_dump(), weight=e.weight) for e in events]
 
 
-@router.post("/events", response_model=schemas.EventOut, status_code=201)
+@guarded.post("/events", response_model=schemas.EventOut, status_code=201)
 def create_event(payload: schemas.EventIn, session: SessionDep):
     event = ClubEvent(**payload.model_dump())
     session.add(event)
@@ -340,7 +355,7 @@ def create_event(payload: schemas.EventIn, session: SessionDep):
     return schemas.EventOut(**event.model_dump(), weight=event.weight)
 
 
-@router.delete("/events/{event_id}", status_code=204)
+@guarded.delete("/events/{event_id}", status_code=204)
 def delete_event(event_id: int, session: SessionDep):
     event = session.get(ClubEvent, event_id)
     if event is None:
@@ -349,7 +364,7 @@ def delete_event(event_id: int, session: SessionDep):
     session.commit()
 
 
-@router.get("/busy", response_model=list[schemas.BusyOut])
+@guarded.get("/busy", response_model=list[schemas.BusyOut])
 def list_busy(start: datetime, end: datetime, session: SessionDep):
     """Everything competing for attention in a window - the calendar grid's data."""
     if end <= start:
@@ -361,7 +376,7 @@ def list_busy(start: datetime, end: datetime, session: SessionDep):
     ]
 
 
-@router.post("/schedule/rank", response_model=schemas.RankResponse)
+@guarded.post("/schedule/rank", response_model=schemas.RankResponse)
 def rank(payload: schemas.RankRequest, session: SessionDep):
     window_start = datetime.combine(payload.window_start, time.min)
     window_end = datetime.combine(payload.window_end, time.max)
@@ -409,7 +424,7 @@ def rank(payload: schemas.RankRequest, session: SessionDep):
     )
 
 
-@router.post("/import/exams", response_model=schemas.ImportResponse)
+@guarded.post("/import/exams", response_model=schemas.ImportResponse)
 def import_exams(payload: schemas.ImportRequest, session: SessionDep):
     """Paste a registrar table and load the sittings for tracked courses."""
     try:
@@ -460,3 +475,45 @@ def import_exams(payload: schemas.ImportRequest, session: SessionDep):
         skipped_non_target=sorted(skipped),
         unknown_courses=sorted(unknown),
     )
+
+
+# ---------------------------------------------------------------- session ---
+#
+# On the open router, because a gate you have to be through in order to knock
+# is not a gate.
+
+
+@router.get("/session", response_model=schemas.SessionOut)
+def read_session(scheduler_session: str | None = Cookie(default=None)):
+    """Whether a password is needed here, and whether this browser has given it.
+
+    The frontend asks this before rendering anything, so a deployment with no
+    password configured never shows a sign-in screen at all.
+    """
+    required = configured_password() is not None
+    return schemas.SessionOut(
+        required=required,
+        authenticated=(not required) or token_is_valid(scheduler_session),
+    )
+
+
+@router.post("/session", response_model=schemas.SessionOut)
+def sign_in(payload: schemas.SignIn, response: Response):
+    if not password_matches(payload.password):
+        raise HTTPException(401, "wrong password")
+    response.set_cookie(
+        COOKIE_NAME,
+        issue_token(),
+        max_age=SESSION_SECONDS,
+        httponly=True,
+        samesite="lax",
+        # Set over https in production; left off locally, where the dev server
+        # is plain http and a secure cookie would simply never be stored.
+        secure=os.environ.get("SCHEDULER_SECURE_COOKIE", "").lower() == "true",
+    )
+    return schemas.SessionOut(required=True, authenticated=True)
+
+
+@router.delete("/session", status_code=204)
+def sign_out(response: Response):
+    response.delete_cookie(COOKIE_NAME)

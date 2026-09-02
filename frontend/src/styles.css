@@ -1415,3 +1415,24 @@ td.small {
 .quick-add.is-floating .field-row {
   max-width: none;
 }
+
+/*
+ * Sign-in. The whole page, because there is nothing to look at until you are
+ * through it.
+ */
+.gate {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.gate .card {
+  width: min(22rem, 100%);
+  margin: 0;
+}
+
+.gate h1 {
+  margin: 0 0 0.15rem;
+  font-size: 1.3rem;
+}
