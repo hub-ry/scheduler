@@ -42,7 +42,8 @@ interface Props {
   preview?: PreviewEvent | null
   /** Compact cells, for when this sits beside a list rather than filling the tab. */
   dense?: boolean
-  onPickDay?: (day: Date) => void
+  /** The day, plus where the pointer was, so a popover can open at the cursor. */
+  onPickDay?: (day: Date, at: { x: number; y: number }) => void
   /** Drag across cells to choose a date range. */
   onSelectRange?: (range: DayRange) => void
   /** One day to mark - the day being acted on, not a range. */
@@ -68,13 +69,14 @@ export function MonthCalendar({
   // the pointer around with no button held.
   useEffect(() => {
     if (anchor === null) return
-    function finish() {
+    function finish(event: PointerEvent) {
       if (anchor && cursor) {
         // A press that never left the cell it started in is a click, not a
         // drag of one day. Both gestures live on this grid - drag sets the
         // search window, click adds a competing event - and this is the line
         // between them, so a short drag cannot silently open a form.
-        if (isSameDay(anchor, cursor) && onPickDay) onPickDay(anchor)
+        if (isSameDay(anchor, cursor) && onPickDay)
+          onPickDay(anchor, { x: event.clientX, y: event.clientY })
         else onSelectRange?.(orderRange(anchor, cursor))
       }
       setAnchor(null)
@@ -144,7 +146,11 @@ export function MonthCalendar({
             <div
               key={key}
               className={classes}
-              onClick={onPickDay && !onSelectRange ? () => onPickDay(day) : undefined}
+              onClick={
+                onPickDay && !onSelectRange
+                  ? (event) => onPickDay(day, { x: event.clientX, y: event.clientY })
+                  : undefined
+              }
               onPointerDown={
                 onSelectRange
                   ? (event) => {

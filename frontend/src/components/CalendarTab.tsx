@@ -30,8 +30,10 @@ interface Props {
 export function CalendarTab({ refreshKey, onChanged }: Props) {
   const [span, setSpan] = useState<Span>(1)
   const [anchor, setAnchor] = useState(() => startOfMonth(new Date()))
-  // `true` means opened by the button with no day in mind.
-  const [adding, setAdding] = useState<Date | true | null>(null)
+  // `true` means opened by the button, which has no cursor to anchor to.
+  const [adding, setAdding] = useState<{ day: Date; at: { x: number; y: number } } | true | null>(
+    null,
+  )
 
   const months = useMemo(
     () => Array.from({ length: span }, (_, index) => addMonths(anchor, index)),
@@ -97,14 +99,17 @@ export function CalendarTab({ refreshKey, onChanged }: Props) {
 
       {error && <div className="notice error">{error}</div>}
 
-      {adding ? (
+      {/* The hint stays put. Swapping it for the form would move the grid even
+          when the form is floating, which is the shift this was meant to stop. */}
+      <p className="hint">Click a day to log a competing event on it.</p>
+
+      {adding && (
         <QuickAddEvent
-          day={adding === true ? undefined : adding}
+          day={adding === true ? undefined : adding.day}
+          at={adding === true ? null : adding.at}
           onClose={() => setAdding(null)}
           onAdded={onChanged}
         />
-      ) : (
-        <p className="hint">Click a day to log a competing event on it.</p>
       )}
 
       <div className={`month-stack span-${span}`}>
@@ -115,8 +120,8 @@ export function CalendarTab({ refreshKey, onChanged }: Props) {
               month={month}
               blocks={blocks}
               dense={span > 1}
-              highlight={adding instanceof Date ? adding : null}
-              onPickDay={setAdding}
+              highlight={adding && adding !== true ? adding.day : null}
+              onPickDay={(day, at) => setAdding({ day, at })}
             />
           </section>
         ))}

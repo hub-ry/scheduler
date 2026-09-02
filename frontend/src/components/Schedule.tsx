@@ -67,7 +67,10 @@ export function Schedule({ onChanged, refreshKey }: Props) {
 
   const [hovered, setHovered] = useState<Slot | null>(null)
   const [month, setMonth] = useState(() => startOfMonth(new Date()))
-  const [addingCompeting, setAddingCompeting] = useState<Date | true | null>(null)
+  // `true` when opened from the button, which has no cursor anchor.
+  const [addingCompeting, setAddingCompeting] = useState<
+    { day: Date; at: { x: number; y: number } } | true | null
+  >(null)
 
   // Which idea this booking is for. The board is the list of things we intend
   // to run, so scheduling one should tick it off there rather than creating an
@@ -218,7 +221,7 @@ export function Schedule({ onChanged, refreshKey }: Props) {
             // Prefilled from the current selection, so the flow is select a
             // day, press this, type a name - rather than re-entering a date
             // that is already highlighted on the grid.
-            onClick={() => setAddingCompeting(parseLocal(`${request.window_start}T00:00:00`))}
+            onClick={() => setAddingCompeting(true)}
             disabled={addingCompeting !== null}
           >
             + Competing event
@@ -227,7 +230,12 @@ export function Schedule({ onChanged, refreshKey }: Props) {
 
         {addingCompeting && (
           <QuickAddEvent
-            day={addingCompeting === true ? undefined : addingCompeting}
+            day={
+              addingCompeting === true
+                ? parseLocal(`${request.window_start}T00:00:00`)
+                : addingCompeting.day
+            }
+            at={addingCompeting === true ? null : addingCompeting.at}
             onClose={() => setAddingCompeting(null)}
             onAdded={onChanged}
           />
@@ -236,8 +244,10 @@ export function Schedule({ onChanged, refreshKey }: Props) {
         <MonthCalendar
           month={month}
           blocks={blocks}
-          highlight={addingCompeting instanceof Date ? addingCompeting : null}
-          onPickDay={setAddingCompeting}
+          highlight={
+            addingCompeting && addingCompeting !== true ? addingCompeting.day : null
+          }
+          onPickDay={(day, at) => setAddingCompeting({ day, at })}
           onSelectRange={(selected: DayRange) =>
             setRequest((previous) => ({
               ...previous,

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { api, ApiError } from '../api'
 import { toDateInput } from '../dates'
 
@@ -18,11 +18,52 @@ import { toDateInput } from '../dates'
 interface Props {
   /** Prefills the date, when the form was opened from a specific day. */
   day?: Date
+  /** Where the pointer was. Given, the form floats at the cursor instead of
+   *  sitting in the flow and pushing the calendar down the page. */
+  at?: { x: number; y: number } | null
   onClose: () => void
   onAdded: () => void
 }
 
-export function QuickAddEvent({ day, onClose, onAdded }: Props) {
+export function QuickAddEvent({ day, at = null, onClose, onAdded }: Props) {
+  const card = useRef<HTMLFormElement>(null)
+  const [placement, setPlacement] = useState<{ left: number; top: number } | null>(null)
+
+  // Measured after mount rather than guessed: the form's height depends on
+  // whether an error is showing, and a popover that hangs off the bottom of the
+  // window is worse than one that takes a frame to settle.
+  useLayoutEffect(() => {
+    if (!at || !card.current) return
+    const box = card.current.getBoundingClientRect()
+    const margin = 12
+    setPlacement({
+      left: Math.min(at.x + margin, window.innerWidth - box.width - margin),
+      top: Math.min(at.y + margin, window.innerHeight - box.height - margin),
+    })
+  }, [at])
+
+  // Escape closes, and so does a click anywhere outside. Both are what a
+  // floating panel is expected to do, and without them the only way out is the
+  // × in the corner.
+  useEffect(() => {
+    if (!at) return
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose()
+    }
+    function onPointer(event: PointerEvent) {
+      if (card.current && !card.current.contains(event.target as Node)) onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    // Deferred a tick: the very click that opened this would otherwise be the
+    // outside click that closes it.
+    const timer = setTimeout(() => window.addEventListener('pointerdown', onPointer), 0)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('pointerdown', onPointer)
+      clearTimeout(timer)
+    }
+  }, [at, onClose])
+
   const [date, setDate] = useState(() => toDateInput(day ?? new Date()))
   const [title, setTitle] = useState('')
   const [organization, setOrganization] = useState('')
@@ -71,7 +112,16 @@ export function QuickAddEvent({ day, onClose, onAdded }: Props) {
   }
 
   return (
-    <form className="quick-add" onSubmit={submit}>
+    <form
+      ref={card}
+      className={`quick-add${at ? ' is-floating' : ''}`}
+      onSubmit={submit}
+      style={
+        at
+          ? { left: placement?.left ?? at.x + 12, top: placement?.top ?? at.y + 12, visibility: placement ? 'visible' : 'hidden' }
+          : undefined
+      }
+    >
       <div className="quick-add-head">
         <strong>Competing event</strong>
         <button type="button" className="ghost icon" aria-label="Cancel" onClick={onClose}>

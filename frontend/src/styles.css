@@ -1270,10 +1270,11 @@ td.small {
 }
 
 /*
- * Quick add, opened by clicking a day.
+ * Quick add.
  *
- * Sits above the grid rather than floating over it: a popover anchored to a
- * cell would cover the very days you are trying to compare against.
+ * Opened from the button it sits in the flow; opened by clicking a day it
+ * floats at the cursor, because reflowing the whole calendar to make room
+ * moved the day you had just clicked out from under your pointer.
  */
 .quick-add {
   margin: 0 0 1rem;
@@ -1392,4 +1393,25 @@ td.small {
 
 .idea-remove:hover {
   color: var(--bad);
+}
+
+.quick-add.is-floating {
+  position: fixed;
+  z-index: 50;
+  width: min(22rem, calc(100vw - 2rem));
+  margin: 0;
+  background: var(--surface);
+  border-color: var(--border-strong);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.18), 0 2px 6px rgb(0 0 0 / 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .quick-add.is-floating {
+    box-shadow: 0 8px 28px rgb(0 0 0 / 0.6), 0 2px 6px rgb(0 0 0 / 0.4);
+  }
+}
+
+.quick-add.is-floating .field,
+.quick-add.is-floating .field-row {
+  max-width: none;
 }
