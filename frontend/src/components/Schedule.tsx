@@ -9,6 +9,7 @@ import {
   type Weekday,
 } from '../api'
 import { addDays, formatDay, formatTime, monthGrid, parseLocal, startOfMonth, toDateInput } from '../dates'
+import type { DayRange } from './MonthCalendar'
 import { clubEventToEvent } from '../gcal'
 import { applyPlan, GoogleError, planTarget, requestAccessToken } from '../gcalClient'
 import { useAsyncData } from '../useAsyncData'
@@ -41,11 +42,11 @@ function defaultRequest(): RankRequest {
     window_start: toDateInput(today),
     window_end: toDateInput(addDays(today, 13)),
     duration_minutes: 60,
-    earliest: '17:00',
-    latest: '22:00',
+    earliest: '19:00',
+    latest: '21:00',
     weekdays: DEFAULT_WEEKDAYS,
     step_minutes: 30,
-    limit: 12,
+    limit: 15,
   }
 }
 
@@ -198,6 +199,14 @@ export function Schedule({ onChanged, refreshKey }: Props) {
         <MonthCalendar
           month={month}
           blocks={blocks}
+          range={{ start: parseLocal(`${request.window_start}T00:00:00`), end: parseLocal(`${request.window_end}T00:00:00`) }}
+          onSelectRange={(selected: DayRange) =>
+            setRequest((previous) => ({
+              ...previous,
+              window_start: toDateInput(selected.start),
+              window_end: toDateInput(selected.end),
+            }))
+          }
           preview={
             showing
               ? { start: showing.start, end: showing.end, label: title.trim() || 'Your event' }

@@ -1171,3 +1171,59 @@ td.small {
 .calendar-tab .month-toolbar {
   flex-wrap: wrap;
 }
+
+/*
+ * Window control: two dates reading as one range rather than two fields.
+ */
+.range-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.range-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.range-dash {
+  flex: none;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/*
+ * The search window, shaded across the grid. Drag to change it.
+ *
+ * Kept as a background tint rather than a border, so it sits behind the event
+ * chips instead of boxing them in - the range is context for what is on the
+ * days, not a thing competing with them.
+ */
+.month-cell.in-range {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.month-cell.in-range.is-outside {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface-2));
+}
+
+.month-cell.range-start {
+  border-top-left-radius: var(--radius-sm);
+  border-bottom-left-radius: var(--radius-sm);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.month-cell.range-end {
+  border-top-right-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
+  box-shadow: inset -2px 0 0 var(--accent);
+}
+
+.month-cell.range-start.range-end {
+  box-shadow: inset 2px 0 0 var(--accent), inset -2px 0 0 var(--accent);
+}
+
+/* A drag across the grid should not leave the day numbers highlighted blue. */
+.month-cell.is-pickable {
+  user-select: none;
+}

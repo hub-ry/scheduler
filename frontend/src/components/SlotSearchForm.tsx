@@ -86,9 +86,9 @@ export function SlotSearchForm({
           </div>
         )}
 
-        <div className="field-row">
-          <div className="field">
-            <label htmlFor="from">From</label>
+        <div className="field">
+          <label htmlFor="from">Window</label>
+          <div className="range-row">
             <input
               id="from"
               type="date"
@@ -96,9 +96,7 @@ export function SlotSearchForm({
               onChange={(e) => set('window_start', e.target.value)}
               required
             />
-          </div>
-          <div className="field">
-            <label htmlFor="to">To</label>
+            <span className="range-dash">to</span>
             <input
               id="to"
               type="date"
@@ -108,6 +106,7 @@ export function SlotSearchForm({
               required
             />
           </div>
+          <span className="hint">Or drag across the calendar.</span>
         </div>
 
         <div className="field-row">

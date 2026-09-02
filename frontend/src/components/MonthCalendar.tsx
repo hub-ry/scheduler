@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Busy } from '../api'
 import {
   addMonths,
@@ -30,6 +30,11 @@ export interface PreviewEvent {
   label: string
 }
 
+export interface DayRange {
+  start: Date
+  end: Date
+}
+
 interface Props {
   month: Date
   blocks: Busy[]
@@ -38,9 +43,43 @@ interface Props {
   /** Compact cells, for when this sits beside a list rather than filling the tab. */
   dense?: boolean
   onPickDay?: (day: Date) => void
+  /** Drag across cells to choose a date range. */
+  onSelectRange?: (range: DayRange) => void
+  /** A committed range, shaded so the current search window is visible. */
+  range?: DayRange | null
 }
 
-export function MonthCalendar({ month, blocks, preview = null, dense = false, onPickDay }: Props) {
+export function MonthCalendar({
+  month,
+  blocks,
+  preview = null,
+  dense = false,
+  onPickDay,
+  onSelectRange,
+  range = null,
+}: Props) {
+  // The in-progress drag. Kept here rather than lifted, because a half-made
+  // selection is not something the rest of the app should be able to see.
+  const [anchor, setAnchor] = useState<Date | null>(null)
+  const [cursor, setCursor] = useState<Date | null>(null)
+
+  // A drag that ends outside the grid still has to end. Without this the
+  // component would stay in dragging state and paint a selection that follows
+  // the pointer around with no button held.
+  useEffect(() => {
+    if (anchor === null) return
+    function finish() {
+      if (anchor && cursor && onSelectRange) onSelectRange(orderRange(anchor, cursor))
+      setAnchor(null)
+      setCursor(null)
+    }
+    window.addEventListener('pointerup', finish)
+    return () => window.removeEventListener('pointerup', finish)
+  }, [anchor, cursor, onSelectRange])
+
+  const dragging = anchor && cursor ? orderRange(anchor, cursor) : null
+  const shown = dragging ?? range
+
   const days = useMemo(() => monthGrid(month), [month])
   const monthStart = startOfMonth(month)
   const today = new Date()
@@ -77,12 +116,16 @@ export function MonthCalendar({ month, blocks, preview = null, dense = false, on
           const key = day.toDateString()
           const outside = day.getMonth() !== monthStart.getMonth()
           const showsPreview = key === previewDay
+          const inRange = shown !== null && day >= shown.start && day <= shown.end
           const classes = [
             'month-cell',
             outside && 'is-outside',
             isSameDay(day, today) && 'is-today',
             showsPreview && 'has-preview',
-            onPickDay && 'is-pickable',
+            inRange && 'in-range',
+            inRange && shown && isSameDay(day, shown.start) && 'range-start',
+            inRange && shown && isSameDay(day, shown.end) && 'range-end',
+            (onPickDay || onSelectRange) && 'is-pickable',
           ]
             .filter(Boolean)
             .join(' ')
@@ -92,8 +135,20 @@ export function MonthCalendar({ month, blocks, preview = null, dense = false, on
               key={key}
               className={classes}
               onClick={onPickDay ? () => onPickDay(day) : undefined}
-              role={onPickDay ? 'button' : undefined}
-              tabIndex={onPickDay ? 0 : undefined}
+              onPointerDown={
+                onSelectRange
+                  ? (event) => {
+                      // Left button only, and never start a drag from inside an
+                      // event chip - that gesture belongs to the chip.
+                      if (event.button !== 0) return
+                      setAnchor(day)
+                      setCursor(day)
+                    }
+                  : undefined
+              }
+              onPointerEnter={onSelectRange && anchor ? () => setCursor(day) : undefined}
+              role={onPickDay || onSelectRange ? 'button' : undefined}
+              tabIndex={onPickDay || onSelectRange ? 0 : undefined}
             >
               <div className="month-date">{day.getDate()}</div>
               <div className="month-events">
@@ -122,6 +177,11 @@ export function MonthCalendar({ month, blocks, preview = null, dense = false, on
       </div>
     </div>
   )
+}
+
+/** Put a dragged pair of days the right way round. */
+function orderRange(a: Date, b: Date): DayRange {
+  return a <= b ? { start: a, end: b } : { start: b, end: a }
 }
 
 /** Toolbar shared by every screen that pages through months. */
