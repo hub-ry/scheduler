@@ -62,6 +62,25 @@ export function CalendarTab({
   const [adding, setAdding] = useState<{ day: Date; at: { x: number; y: number } } | true | null>(
     null,
   )
+  const [recommendMode, setRecommendMode] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('scheduler.recommend_days') === 'true'
+    } catch {
+      return false
+    }
+  })
+
+  function toggleRecommend() {
+    setRecommendMode((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem('scheduler.recommend_days', String(next))
+      } catch {
+        // Ignore private browsing storage errors
+      }
+      return next
+    })
+  }
 
   const initialWindow = defaultWindow()
   const [request, setRequest] = useState<RankRequest>({
@@ -312,6 +331,7 @@ export function CalendarTab({
           blocks={blocks}
           preview={preview}
           highlight={proposed ? parseLocal(proposed.start) : null}
+          recommendMode={recommendMode}
           onMonthChange={setAnchor}
           onManageInCalendar={() => setManageModalOpen(true)}
           onPickDay={(day, at) => setAdding({ day, at })}
@@ -321,6 +341,21 @@ export function CalendarTab({
           }
           headerActions={
             <div className="notion-toolbar-actions">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={recommendMode}
+                className={`notion-switch-btn ${recommendMode ? 'is-active' : ''}`}
+                onClick={toggleRecommend}
+                title="Highlight conflict-free days to host events (weekdays, 7:00 PM and beyond)"
+              >
+                <span className="switch-track">
+                  <span className="switch-thumb" />
+                </span>
+                <span className="switch-sparkle">✦</span>
+                <span className="switch-label">Recommend Days</span>
+              </button>
+
               <div className="notion-filter-pills">
                 <button
                   type="button"

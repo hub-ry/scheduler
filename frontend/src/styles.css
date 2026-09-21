@@ -62,6 +62,16 @@
   --chip-preview-text: #ffffff;
   --chip-preview-border: #2383e2;
 
+  /* Recommended Hosting Days (Default Notion: Emerald Tint) */
+  --day-recommended-bg: rgba(39, 174, 96, 0.08);
+  --day-recommended-border: rgba(39, 174, 96, 0.32);
+  --day-recommended-hover-bg: rgba(39, 174, 96, 0.14);
+  --day-recommended-badge-bg: rgba(39, 174, 96, 0.18);
+  --day-recommended-badge-text: #27ae60;
+  --day-recommended-chip-bg: rgba(39, 174, 96, 0.14);
+  --day-recommended-chip-text: #4ade80;
+  --day-recommended-chip-border: rgba(39, 174, 96, 0.38);
+
   --radius-xs: 3px;
   --radius-sm: 5px;
   --radius-md: 6px;
@@ -124,6 +134,16 @@
   --chip-preview-bg: rgba(185, 90, 45, 0.28);
   --chip-preview-text: #f6eee3;
   --chip-preview-border: #b95a2d;
+
+  /* Recommended Hosting Days (Coffee Spill: Warm Matcha Tone) */
+  --day-recommended-bg: rgba(107, 128, 52, 0.14);
+  --day-recommended-border: rgba(107, 128, 52, 0.38);
+  --day-recommended-hover-bg: rgba(107, 128, 52, 0.22);
+  --day-recommended-badge-bg: rgba(107, 128, 52, 0.25);
+  --day-recommended-badge-text: #9ab358;
+  --day-recommended-chip-bg: rgba(107, 128, 52, 0.18);
+  --day-recommended-chip-text: #b8d46e;
+  --day-recommended-chip-border: rgba(107, 128, 52, 0.42);
 }
 
 /* Base Reset */
@@ -393,6 +413,72 @@ button, input, select, textarea {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* Switch Button (Recommend Days) */
+.notion-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.notion-switch-btn:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+
+.notion-switch-btn.is-active {
+  color: var(--text-primary);
+  background: var(--bg-surface-active);
+  border-color: var(--day-recommended-border);
+  box-shadow: 0 0 10px rgba(39, 174, 96, 0.15);
+}
+
+.switch-track {
+  position: relative;
+  width: 26px;
+  height: 15px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.16);
+  transition: background-color 0.2s ease;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.notion-switch-btn.is-active .switch-track {
+  background: var(--day-recommended-badge-text);
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 1.5px;
+  left: 1.5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.notion-switch-btn.is-active .switch-thumb {
+  transform: translateX(11px);
+}
+
+.switch-sparkle {
+  color: var(--day-recommended-badge-text);
+  font-size: 11px;
 }
 
 /* Filter Pills */
@@ -704,6 +790,21 @@ button, input, select, textarea {
   background: rgba(82, 156, 202, 0.07);
 }
 
+/* Recommended Day Cell Style */
+.notion-cell.is-recommended {
+  background: var(--day-recommended-bg);
+  box-shadow: inset 0 0 0 1px var(--day-recommended-border);
+}
+
+.notion-cell.is-recommended.is-clickable:hover {
+  background: var(--day-recommended-hover-bg);
+}
+
+.notion-cell.is-dense.is-recommended {
+  background: var(--day-recommended-bg);
+  box-shadow: inset 0 0 0 1px var(--day-recommended-border);
+}
+
 /* Cell Header (Top Right Date Alignment) */
 .notion-cell-header {
   display: flex;
@@ -758,6 +859,27 @@ button, input, select, textarea {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Recommended Day Tag */
+.notion-recommended-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--day-recommended-badge-bg);
+  color: var(--day-recommended-badge-text);
+  border: 1px solid var(--day-recommended-border);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.notion-recommended-tag .rec-star {
+  font-size: 9px;
 }
 
 /* Events Inside Cell */
@@ -869,6 +991,26 @@ button, input, select, textarea {
 @keyframes pulseSlot {
   0%, 100% { opacity: 0.9; }
   50% { opacity: 1; }
+}
+
+.chip-dot.kind-recommended {
+  background: var(--day-recommended-badge-text);
+  box-shadow: 0 0 4px var(--day-recommended-badge-text);
+}
+
+.notion-event-chip.is-recommended-slot {
+  background: var(--day-recommended-chip-bg);
+  color: var(--day-recommended-chip-text);
+  border: 1px dashed var(--day-recommended-chip-border);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.notion-event-chip.is-recommended-slot:hover {
+  background: var(--day-recommended-hover-bg);
+  border-style: solid;
+  transform: translateY(-0.5px);
 }
 
 /* Overflow Chip */

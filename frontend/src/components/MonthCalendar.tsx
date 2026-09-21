@@ -13,6 +13,7 @@ import {
   toDateInput,
 } from '../dates'
 import { Icon } from './Icons'
+import { evaluateDayRecommendation } from '../recommend'
 
 export interface PreviewEvent {
   start: string
@@ -29,6 +30,7 @@ interface Props {
   blocks: Busy[]
   preview?: PreviewEvent | null
   highlight?: Date | null
+  recommendMode?: boolean
   onPickDay?: (day: Date, at: { x: number; y: number }) => void
   onMonthChange?: (month: Date) => void
   onManageInCalendar?: () => void
@@ -80,6 +82,7 @@ export function MonthCalendar({
   blocks,
   preview = null,
   highlight = null,
+  recommendMode = false,
   onPickDay,
   onMonthChange,
   onManageInCalendar,
@@ -237,6 +240,7 @@ export function MonthCalendar({
             previewDay={previewDay}
             highlight={highlight}
             dense={false}
+            recommendMode={recommendMode}
             onPickDay={onPickDay}
             onEventClick={(block, rect) => setActiveEvent({ block, rect })}
             onExpandDay={(day) => setDayExpanded(day)}
@@ -289,6 +293,7 @@ export function MonthCalendar({
                   previewDay={previewDay}
                   highlight={highlight}
                   dense={true}
+                  recommendMode={recommendMode}
                   onPickDay={onPickDay}
                   onEventClick={(block, rect) => setActiveEvent({ block, rect })}
                   onExpandDay={(day) => setDayExpanded(day)}
@@ -348,6 +353,7 @@ interface MonthGridProps {
   previewDay: string | null
   highlight: Date | null
   dense: boolean
+  recommendMode?: boolean
   onPickDay?: (day: Date, at: { x: number; y: number }) => void
   onEventClick: (block: Busy, rect: DOMRect) => void
   onExpandDay: (day: Date) => void
@@ -362,6 +368,7 @@ function MonthGrid({
   previewDay,
   highlight,
   dense,
+  recommendMode = false,
   onPickDay,
   onEventClick,
   onExpandDay,
@@ -391,11 +398,18 @@ function MonthGrid({
           const overflowCount = isOutside ? 0 : regularBlocks.length - maxVisibleChips
           const { text: dateText } = formatCellDateLabel(day)
 
+          // Check if this day is recommended for hosting events (weekdays, 7:00 PM+)
+          const recommendation = !isOutside && recommendMode
+            ? evaluateDayRecommendation(day, dayBlocks, closedDays)
+            : null
+          const isRecommended = Boolean(recommendMode && recommendation?.isRecommended)
+
           const cellClasses = [
             'notion-cell',
             dense && 'is-dense',
             isOutside && 'is-outside',
             isToday && !isOutside && 'is-today',
+            isRecommended && 'is-recommended',
             showsPreview && 'has-preview',
             isHighlighted && 'is-highlighted',
             closed && 'is-closed',
@@ -429,6 +443,15 @@ function MonthGrid({
                     {closed.label}
                   </span>
                 )}
+                {isRecommended && !closed && (
+                  <span
+                    className="notion-recommended-tag"
+                    title={recommendation?.reason || 'Recommended: Weekday evening is clear (7:00 PM+)'}
+                  >
+                    <span className="rec-star">✦</span>
+                    <span>{dense ? '7p+' : 'Best Day (7p+)'}</span>
+                  </span>
+                )}
                 <div className="notion-date-wrap">
                   {isToday ? (
                     <span className="notion-today-circle">{day.getDate()}</span>
@@ -441,6 +464,23 @@ function MonthGrid({
               </div>
 
               <div className="notion-cell-events">
+                {isRecommended && !dense && (
+                  <div
+                    className="notion-event-chip is-recommended-slot"
+                    title="Recommended Host Window: 7:00 PM and beyond is clear. Click to schedule."
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (onPickDay) {
+                        onPickDay(day, { x: e.clientX, y: e.clientY })
+                      }
+                    }}
+                  >
+                    <span className="chip-dot kind-recommended" />
+                    <span className="chip-time">7:00 PM+</span>
+                    <span className="chip-label">Host Window</span>
+                  </div>
+                )}
+
                 {showsPreview && preview && (
                   <div className="notion-event-chip is-preview" title="Proposed event slot">
                     <span className="chip-badge">★</span>
