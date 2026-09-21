@@ -1,13 +1,130 @@
 /*
- * Notion Calendar Design System
- * Minimalist, distraction-free, pixel-perfect dark theme (with light option).
+ * Purdue Hackers x Notion Calendar Design System
+ * Creative themes inspired by burst.purduehackers.com and spill.purduehackers.com.
  */
 
-:root {
+:root,
+:root[data-theme='burst'] {
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Notion Dark Theme (Default) */
+  /* Burst Theme (Default): Electric Red #E6002A, Obsidian Noir, Pure White */
+  --bg-app: #0c0d10;
+  --bg-surface: #14151b;
+  --bg-surface-hover: #1b1d26;
+  --bg-surface-active: #232532;
+  --bg-panel: #111218;
+  --bg-card: #161822;
+
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --border-default: rgba(255, 255, 255, 0.16);
+  --border-strong: rgba(255, 255, 255, 0.28);
+
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.76);
+  --text-muted: rgba(255, 255, 255, 0.48);
+  --text-faint: rgba(255, 255, 255, 0.28);
+
+  /* Accents */
+  --accent: #e6002a;
+  --accent-hover: #ff1a40;
+  --accent-soft: rgba(230, 0, 42, 0.18);
+  --accent-border: rgba(230, 0, 42, 0.45);
+
+  --notion-red: #e6002a;
+  --notion-green: #22c55e;
+  --notion-orange: #f97316;
+  --notion-purple: #a855f7;
+  --notion-blue: #06b6d4;
+
+  /* Event Pill Colors (Burst Palette) */
+  --chip-ours-bg: rgba(230, 0, 42, 0.22);
+  --chip-ours-text: #ff4d6a;
+  --chip-ours-border: rgba(230, 0, 42, 0.4);
+
+  --chip-event-bg: rgba(168, 85, 247, 0.2);
+  --chip-event-text: #c084fc;
+  --chip-event-border: rgba(168, 85, 247, 0.35);
+
+  --chip-exam-bg: rgba(249, 115, 22, 0.2);
+  --chip-exam-text: #fb923c;
+  --chip-exam-border: rgba(249, 115, 22, 0.35);
+
+  --chip-closed-bg: rgba(230, 0, 42, 0.25);
+  --chip-closed-text: #ff6b81;
+  --chip-closed-border: rgba(230, 0, 42, 0.45);
+
+  --chip-academic-bg: rgba(251, 191, 36, 0.18);
+  --chip-academic-text: #fcd34d;
+  --chip-academic-border: rgba(251, 191, 36, 0.35);
+
+  --chip-preview-bg: rgba(230, 0, 42, 0.28);
+  --chip-preview-text: #ffffff;
+  --chip-preview-border: #e6002a;
+
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-full: 9999px;
+}
+
+:root[data-theme='spill'] {
+  /* Spill Theme: Vienna Coffee House, Roasted Espresso, Warm Cream, Matcha, Red Clay */
+  --bg-app: #1c1513;
+  --bg-surface: #241c19;
+  --bg-surface-hover: #2e2320;
+  --bg-surface-active: #3a2d29;
+  --bg-panel: #201816;
+  --bg-card: #271e1a;
+
+  --border-subtle: rgba(236, 219, 191, 0.12);
+  --border-default: rgba(236, 219, 191, 0.18);
+  --border-strong: rgba(236, 219, 191, 0.3);
+
+  --text-primary: #f6eee3;
+  --text-secondary: #c9baa9;
+  --text-muted: #8d7f72;
+  --text-faint: #63574c;
+
+  --accent: #b95a2d;
+  --accent-hover: #cf6935;
+  --accent-soft: rgba(185, 90, 45, 0.22);
+  --accent-border: rgba(185, 90, 45, 0.45);
+
+  --notion-red: #b95a2d;
+  --notion-green: #6b8034;
+  --notion-orange: #d97706;
+  --notion-purple: #896258;
+  --notion-blue: #556432;
+
+  --chip-ours-bg: rgba(185, 90, 45, 0.25);
+  --chip-ours-text: #e07a48;
+  --chip-ours-border: rgba(185, 90, 45, 0.45);
+
+  --chip-event-bg: rgba(107, 128, 52, 0.24);
+  --chip-event-text: #9ab358;
+  --chip-event-border: rgba(107, 128, 52, 0.4);
+
+  --chip-exam-bg: rgba(217, 119, 6, 0.22);
+  --chip-exam-text: #fbbf24;
+  --chip-exam-border: rgba(217, 119, 6, 0.4);
+
+  --chip-closed-bg: rgba(137, 98, 88, 0.3);
+  --chip-closed-text: #d4a99f;
+  --chip-closed-border: rgba(137, 98, 88, 0.45);
+
+  --chip-academic-bg: rgba(160, 160, 65, 0.22);
+  --chip-academic-text: #c8c85a;
+  --chip-academic-border: rgba(160, 160, 65, 0.4);
+
+  --chip-preview-bg: rgba(185, 90, 45, 0.28);
+  --chip-preview-text: #f6eee3;
+  --chip-preview-border: #b95a2d;
+}
+
+:root[data-theme='midnight'] {
+  /* Notion Midnight Theme: Minimalist Dark Charcoal #191919 */
   --bg-app: #191919;
   --bg-surface: #202020;
   --bg-surface-hover: #262626;
@@ -24,11 +141,10 @@
   --text-muted: rgba(255, 255, 255, 0.44);
   --text-faint: rgba(255, 255, 255, 0.28);
 
-  /* Accents */
-  --accent: #529cca;
-  --accent-hover: #63a9d7;
-  --accent-soft: rgba(82, 156, 202, 0.18);
-  --accent-border: rgba(82, 156, 202, 0.35);
+  --accent: #ea4e43;
+  --accent-hover: #f1665c;
+  --accent-soft: rgba(234, 78, 67, 0.18);
+  --accent-border: rgba(234, 78, 67, 0.35);
 
   --notion-red: #ea4e43;
   --notion-green: #57ab5a;
@@ -36,7 +152,6 @@
   --notion-purple: #9d68d3;
   --notion-blue: #529cca;
 
-  /* Event Pill Colors (Notion Dark) */
   --chip-ours-bg: rgba(35, 78, 55, 0.6);
   --chip-ours-text: #85e89d;
   --chip-ours-border: rgba(133, 232, 157, 0.2);
@@ -57,62 +172,63 @@
   --chip-academic-text: #79c0ff;
   --chip-academic-border: rgba(121, 192, 255, 0.2);
 
-  --chip-preview-bg: rgba(30, 95, 160, 0.4);
-  --chip-preview-text: #79c0ff;
-  --chip-preview-border: #58a6ff;
-
-  --radius-xs: 3px;
-  --radius-sm: 5px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-full: 9999px;
+  --chip-preview-bg: rgba(234, 78, 67, 0.28);
+  --chip-preview-text: #ffffff;
+  --chip-preview-border: #ea4e43;
 }
 
-[data-theme='light'] {
-  --bg-app: #ffffff;
-  --bg-surface: #f7f7f5;
-  --bg-surface-hover: #efefed;
-  --bg-surface-active: #e6e6e4;
-  --bg-panel: #fbfbfa;
+:root[data-theme='light'] {
+  /* Studio Gallery Light */
+  --bg-app: #fbfbfa;
+  --bg-surface: #ffffff;
+  --bg-surface-hover: #f3f3f1;
+  --bg-surface-active: #e8e8e5;
+  --bg-panel: #f7f7f5;
   --bg-card: #ffffff;
 
   --border-subtle: rgba(55, 53, 47, 0.08);
   --border-default: rgba(55, 53, 47, 0.14);
   --border-strong: rgba(55, 53, 47, 0.25);
 
-  --text-primary: #37352f;
-  --text-secondary: rgba(55, 53, 47, 0.72);
-  --text-muted: rgba(55, 53, 47, 0.5);
-  --text-faint: rgba(55, 53, 47, 0.3);
+  --text-primary: #1e1e1e;
+  --text-secondary: rgba(30, 30, 30, 0.72);
+  --text-muted: rgba(30, 30, 30, 0.5);
+  --text-faint: rgba(30, 30, 30, 0.3);
 
-  --accent: #0b6e99;
-  --accent-hover: #085577;
-  --accent-soft: rgba(11, 110, 153, 0.12);
-  --accent-border: rgba(11, 110, 153, 0.3);
+  --accent: #e6002a;
+  --accent-hover: #c40024;
+  --accent-soft: rgba(230, 0, 42, 0.12);
+  --accent-border: rgba(230, 0, 42, 0.3);
 
-  --chip-ours-bg: rgba(46, 133, 85, 0.15);
-  --chip-ours-text: #0f7b6c;
-  --chip-ours-border: rgba(15, 123, 108, 0.3);
+  --notion-red: #e6002a;
+  --notion-green: #15803d;
+  --notion-orange: #c2410c;
+  --notion-purple: #7e22ce;
+  --notion-blue: #0284c7;
 
-  --chip-event-bg: rgba(217, 115, 13, 0.15);
+  --chip-ours-bg: rgba(230, 0, 42, 0.12);
+  --chip-ours-text: #b90022;
+  --chip-ours-border: rgba(230, 0, 42, 0.28);
+
+  --chip-event-bg: rgba(217, 115, 13, 0.12);
   --chip-event-text: #b55d04;
-  --chip-event-border: rgba(217, 115, 13, 0.3);
+  --chip-event-border: rgba(217, 115, 13, 0.28);
 
-  --chip-exam-bg: rgba(235, 87, 87, 0.15);
+  --chip-exam-bg: rgba(235, 87, 87, 0.12);
   --chip-exam-text: #cb3a31;
-  --chip-exam-border: rgba(235, 87, 87, 0.3);
+  --chip-exam-border: rgba(235, 87, 87, 0.28);
 
-  --chip-closed-bg: rgba(105, 64, 165, 0.15);
+  --chip-closed-bg: rgba(105, 64, 165, 0.12);
   --chip-closed-text: #532f8c;
-  --chip-closed-border: rgba(105, 64, 165, 0.3);
+  --chip-closed-border: rgba(105, 64, 165, 0.28);
 
-  --chip-academic-bg: rgba(11, 110, 153, 0.15);
+  --chip-academic-bg: rgba(11, 110, 153, 0.12);
   --chip-academic-text: #0b6e99;
-  --chip-academic-border: rgba(11, 110, 153, 0.3);
+  --chip-academic-border: rgba(11, 110, 153, 0.28);
 
-  --chip-preview-bg: rgba(11, 110, 153, 0.18);
-  --chip-preview-text: #0b6e99;
-  --chip-preview-border: #0b6e99;
+  --chip-preview-bg: rgba(230, 0, 42, 0.18);
+  --chip-preview-text: #e6002a;
+  --chip-preview-border: #e6002a;
 }
 
 /* Base Reset */
@@ -178,18 +294,32 @@ button, input, select, textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: var(--radius-xs);
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-primary);
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+}
+
+.brand-burst-symbol {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.brand-text-block {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .brand-name {
   font-size: 13.5px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-primary);
-  letter-spacing: -0.01em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .brand-divider {
@@ -199,11 +329,27 @@ button, input, select, textarea {
 
 .brand-tag {
   font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.06);
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
   padding: 1px 6px;
   border-radius: var(--radius-xs);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.brand-burst-canvas {
+  display: block;
+  cursor: crosshair;
+  border-radius: var(--radius-xs);
+  margin-left: 2px;
+}
+
+@media (max-width: 900px) {
+  .brand-burst-canvas {
+    display: none;
+  }
 }
 
 .notion-nav-tabs {
@@ -297,8 +443,54 @@ button, input, select, textarea {
 
 .notion-month-title {
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.015em;
+  color: var(--text-primary);
+}
+
+.notion-span-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: var(--radius-xs);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+}
+
+/* Zoom Group Pills (Month | 3 Months | 6 Months) */
+.notion-zoom-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 2px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.notion-zoom-btn {
+  padding: 3px 9px;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.notion-zoom-btn:hover {
+  color: var(--text-secondary);
+}
+
+.notion-zoom-btn.is-active {
+  background: rgba(255, 255, 255, 0.1);
   color: var(--text-primary);
 }
 
@@ -429,6 +621,117 @@ button, input, select, textarea {
   color: var(--text-muted);
 }
 
+/* Single Month View Wrapper */
+.notion-single-month-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Multi-Month Stack (3 Months / 6 Months Horizon) */
+.notion-month-stack {
+  flex: 1;
+  display: grid;
+  gap: 14px;
+  padding: 0 20px 20px 20px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.notion-month-stack.span-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.notion-month-stack.span-6 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: auto;
+}
+
+@media (max-width: 1160px) {
+  .notion-month-stack.span-3,
+  .notion-month-stack.span-6 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .notion-month-stack.span-3,
+  .notion-month-stack.span-6 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.notion-month-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  min-width: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+}
+
+.notion-month-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px 6px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.notion-month-panel-title-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  transition: background 0.12s ease;
+}
+
+.notion-month-panel-title-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.panel-title-text {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.panel-zoom-pill {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+}
+
+.panel-event-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.notion-weekday-row.is-dense {
+  padding: 4px 8px;
+  margin-bottom: 2px;
+}
+
+.notion-weekday-row.is-dense .notion-weekday-label {
+  font-size: 11px;
+}
+
 /* Month Grid Container (Hairline Grid Border) */
 .notion-month-grid-wrapper {
   flex: 1;
@@ -436,6 +739,11 @@ button, input, select, textarea {
   flex-direction: column;
   padding: 0 20px 20px 20px;
   min-height: 0;
+}
+
+.notion-month-grid-wrapper.is-dense {
+  padding: 0 8px 8px 8px;
+  flex: 1;
 }
 
 .notion-month-grid {
@@ -447,6 +755,11 @@ button, input, select, textarea {
   border-radius: 4px;
   overflow: hidden;
   background: var(--bg-app);
+}
+
+.notion-month-grid.is-dense {
+  border-radius: var(--radius-xs);
+  min-height: 0;
 }
 
 /* Day Cell */
@@ -1996,37 +2309,147 @@ button, input, select, textarea {
   border-left: 3px solid var(--accent);
 }
 
-/* Theme Toggle */
-.theme-toggle {
-  display: flex;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 2px;
+/* Dense Month Grid & Cells for Multi-Month View */
+.notion-cell.is-dense {
+  min-height: 64px;
+  padding: 4px 5px;
 }
 
-.theme-toggle button {
+.notion-cell.is-dense .notion-cell-header {
+  min-height: 18px;
+  margin-bottom: 1px;
+}
+
+.notion-cell.is-dense .notion-cell-date {
+  font-size: 11px;
+}
+
+.notion-cell.is-dense .notion-today-circle {
+  width: 19px;
+  height: 19px;
+  font-size: 10.5px;
+}
+
+.notion-cell.is-dense .notion-holiday-tag {
+  font-size: 8.5px;
+  padding: 0 3px;
+  max-width: 60%;
+}
+
+.notion-event-chip.is-dense {
+  height: 17px;
+  padding: 0 4px;
+  font-size: 10px;
+  gap: 3px;
+  margin-bottom: 1px;
+}
+
+.notion-event-chip.is-dense .chip-dot {
+  width: 4px;
+  height: 4px;
+}
+
+.notion-event-chip.is-dense .chip-time {
+  font-size: 9px;
+}
+
+/* Empty Day State in Modal */
+.empty-day-state {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 24px;
-  background: transparent;
-  border: none;
+  padding: 32px 16px;
+  text-align: center;
+  gap: 12px;
+}
+
+.empty-sparkle {
+  font-size: 26px;
+  color: var(--accent);
+  line-height: 1;
+}
+
+/* Tactile Paper Grain Overlay for Spill Theme */
+.grain-overlay {
+  display: none;
+}
+
+[data-theme='spill'] .grain-overlay {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* Ambient Spilled Coffee Ring Art */
+.spill-ambient-ring {
+  display: none;
+}
+
+[data-theme='spill'] .spill-ambient-ring {
+  display: block;
+  position: absolute;
+  bottom: 14px;
+  right: 18px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.7;
+}
+
+/* Theme Toggle Pills (Burst | Spill | Notion | Light) */
+.theme-toggle-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 2px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.theme-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
   border-radius: var(--radius-xs);
+  border: none;
+  background: transparent;
   color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.1s ease;
+  transition: all 0.12s ease;
+  user-select: none;
 }
 
-.theme-toggle button:hover {
+.theme-pill-btn:hover {
   color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.theme-toggle button.is-active {
+.theme-pill-btn.is-active {
   background: rgba(255, 255, 255, 0.12);
   color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.theme-symbol {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.theme-name {
+  font-size: 11px;
 }
 
 /* Spinning Animation */

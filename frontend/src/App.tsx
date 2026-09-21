@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Idea } from './api'
+import { BurstArtCanvas } from './components/BurstArtCanvas'
 import { CalendarTab } from './components/CalendarTab'
 import { Icon, type IconName } from './components/Icons'
 import { Ideas } from './components/Ideas'
@@ -45,15 +46,19 @@ function AppContent() {
 
   return (
     <div className="notion-app-shell">
+      <div className="grain-overlay" aria-hidden="true" />
       <header className="notion-topbar">
         <div className="notion-topbar-left">
           <div className="notion-brand">
             <div className="brand-logo-wrap">
-              <Icon name="calendar" size={15} />
+              <span className="brand-burst-symbol">✷</span>
             </div>
-            <span className="brand-name">Scheduler</span>
-            <span className="brand-divider">/</span>
-            <span className="brand-tag">Purdue CS</span>
+            <div className="brand-text-block">
+              <span className="brand-name">Scheduler</span>
+              <span className="brand-divider">/</span>
+              <span className="brand-tag">Purdue Hackers</span>
+            </div>
+            <BurstArtCanvas width={110} height={34} className="brand-burst-canvas" />
           </div>
 
           <nav className="notion-nav-tabs" role="tablist">

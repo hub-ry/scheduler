@@ -10,17 +10,22 @@ import { useEffect, useState } from 'react'
  * precedence than the media query in both directions.
  */
 
-export type Theme = 'light' | 'dark' | 'system'
+export type Theme = 'burst' | 'spill' | 'midnight' | 'light'
 
 const KEY = 'scheduler.theme'
 
 function stored(): Theme {
   try {
     const value = localStorage.getItem(KEY)
-    return value === 'light' || value === 'dark' ? value : 'system'
+    if (value === 'burst' || value === 'spill' || value === 'midnight' || value === 'light') {
+      return value
+    }
+    if (value === 'dark') return 'burst'
+    // Default to creative Burst theme
+    return 'burst'
   } catch {
     // Private-mode browsers throw on access rather than returning null.
-    return 'system'
+    return 'burst'
   }
 }
 
@@ -29,11 +34,9 @@ export function useTheme(): [Theme, (next: Theme) => void] {
 
   useEffect(() => {
     const root = document.documentElement
-    if (theme === 'system') root.removeAttribute('data-theme')
-    else root.setAttribute('data-theme', theme)
+    root.setAttribute('data-theme', theme)
     try {
-      if (theme === 'system') localStorage.removeItem(KEY)
-      else localStorage.setItem(KEY, theme)
+      localStorage.setItem(KEY, theme)
     } catch {
       // Not worth failing the render over; the theme just will not persist.
     }

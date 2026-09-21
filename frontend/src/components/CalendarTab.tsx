@@ -9,6 +9,7 @@ import {
 } from '../api'
 import {
   addDays,
+  addMonths,
   formatDay,
   formatTime,
   monthGrid,
@@ -19,9 +20,10 @@ import {
 import { describeError, moveEventToDay } from '../eventEdits'
 import { useAsyncData } from '../useAsyncData'
 import { useToast } from '../toastContext'
+import { CoffeeRingArt } from './CoffeeRingArt'
 import { Icon } from './Icons'
 import { ManageCalendarModal } from './ManageCalendarModal'
-import { MonthCalendar, type PreviewEvent } from './MonthCalendar'
+import { MonthCalendar, type CalendarSpan, type PreviewEvent } from './MonthCalendar'
 import { QuickAddEvent } from './QuickAddEvent'
 import { SlotList } from './SlotList'
 import { SlotSearchForm } from './SlotSearchForm'
@@ -91,10 +93,17 @@ export function CalendarTab({
   const chosenIdea = ideas.find((idea) => idea.id === ideaId)
   const eventName = chosenIdea?.title ?? title.trim()
 
-  // Calculate calendar date range
-  const grid = useMemo(() => monthGrid(anchor), [anchor])
-  const windowStart = toDateInput(grid[0])
-  const windowEnd = toDateInput(addDays(grid[grid.length - 1], 1))
+  const [span, setSpan] = useState<CalendarSpan>(1)
+
+  // Calculate calendar date range covering all months in the selected span
+  const months = useMemo(
+    () => Array.from({ length: span }, (_, index) => addMonths(anchor, index)),
+    [anchor, span],
+  )
+  const firstGrid = useMemo(() => monthGrid(months[0]), [months])
+  const lastGrid = useMemo(() => monthGrid(months[months.length - 1]), [months])
+  const windowStart = toDateInput(firstGrid[0])
+  const windowEnd = toDateInput(addDays(lastGrid[lastGrid.length - 1], 1))
 
   const { data: rawBlocks } = useAsyncData(
     () => api.busy(`${windowStart}T00:00:00`, `${windowEnd}T00:00:00`),
@@ -295,8 +304,11 @@ export function CalendarTab({
       )}
 
       <div className="notion-calendar-content">
+        <CoffeeRingArt className="spill-ambient-ring" />
         <MonthCalendar
           month={anchor}
+          span={span}
+          onSpanChange={setSpan}
           blocks={blocks}
           preview={preview}
           highlight={proposed ? parseLocal(proposed.start) : null}

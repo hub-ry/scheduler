@@ -25,6 +25,9 @@ export type IconName =
   | 'upload'
   | 'dragHandle'
   | 'sparkle'
+  | 'burstStar'
+  | 'coffee'
+  | 'gridFour'
   | 'info'
   | 'pencilSimple'
 
@@ -201,6 +204,29 @@ const ICONS: Record<IconName, React.ReactNode> = {
     </>
   ),
   sparkle: <polygon points="128 24 146 90 212 108 146 126 128 192 110 126 44 108 110 90 128 24" />,
+  burstStar: (
+    <polygon
+      points="128 16 142 102 228 116 150 142 164 228 116 150 28 136 106 112 128 16"
+      fill="currentColor"
+    />
+  ),
+  coffee: (
+    <>
+      <path d="M48 80h136a8 8 0 0 1 8 8v64a56 56 0 0 1-56 56H96a56 56 0 0 1-56-56V88a8 8 0 0 1 8-8z" />
+      <path d="M192 104h24a20 20 0 0 1 20 20v8a20 20 0 0 1-20 20h-24" />
+      <line x1="88" y1="40" x2="88" y2="60" />
+      <line x1="128" y1="32" x2="128" y2="60" />
+      <line x1="168" y1="40" x2="168" y2="60" />
+    </>
+  ),
+  gridFour: (
+    <>
+      <rect x="48" y="48" width="64" height="64" rx="8" />
+      <rect x="144" y="48" width="64" height="64" rx="8" />
+      <rect x="48" y="144" width="64" height="64" rx="8" />
+      <rect x="144" y="144" width="64" height="64" rx="8" />
+    </>
+  ),
   info: (
     <>
       <circle cx="128" cy="128" r="96" />
