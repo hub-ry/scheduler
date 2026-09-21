@@ -2,6 +2,7 @@ import React from 'react'
 
 export type IconName =
   | 'calendar'
+  | 'calendar21'
   | 'clock'
   | 'search'
   | 'plus'
@@ -60,6 +61,26 @@ const ICONS: Record<IconName, React.ReactNode> = {
       <line x1="176" y1="24" x2="176" y2="56" />
       <line x1="80" y1="24" x2="80" y2="56" />
       <line x1="40" y1="88" x2="216" y2="88" />
+    </>
+  ),
+  calendar21: (
+    <>
+      <rect x="36" y="40" width="184" height="176" rx="16" />
+      <line x1="176" y1="20" x2="176" y2="56" />
+      <line x1="80" y1="20" x2="80" y2="56" />
+      <line x1="36" y1="92" x2="220" y2="92" />
+      <text
+        x="128"
+        y="176"
+        fontSize="64"
+        fontWeight="700"
+        fontFamily="system-ui, -apple-system, sans-serif"
+        textAnchor="middle"
+        fill="currentColor"
+        stroke="none"
+      >
+        21
+      </text>
     </>
   ),
   clock: (

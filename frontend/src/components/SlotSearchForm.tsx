@@ -1,6 +1,6 @@
 import React from 'react'
 import type { Package, RankRequest, Weekday } from '../api'
-import { addDays, DAY_NAMES, endOfMonth, startOfMonth, toDateInput } from '../dates'
+import { addDays, endOfMonth, startOfMonth, toDateInput } from '../dates'
 import { Icon } from './Icons'
 
 interface Props {
@@ -14,6 +14,16 @@ interface Props {
 }
 
 const DURATION_PRESETS = [45, 60, 90, 120]
+
+const SEARCH_WEEKDAYS: { id: Weekday; label: string }[] = [
+  { id: 0, label: 'M' },
+  { id: 1, label: 'T' },
+  { id: 2, label: 'W' },
+  { id: 3, label: 'T' },
+  { id: 4, label: 'F' },
+  { id: 5, label: 'S' },
+  { id: 6, label: 'S' },
+]
 
 export function SlotSearchForm({
   request,
@@ -173,17 +183,17 @@ export function SlotSearchForm({
         <div className="form-group">
           <label>Days of Week</label>
           <div className="weekday-picker">
-            {DAY_NAMES.map((name, index) => {
-              const active = request.weekdays.includes(index as Weekday)
+            {SEARCH_WEEKDAYS.map(({ id, label }, idx) => {
+              const active = request.weekdays.includes(id)
               return (
                 <button
-                  key={name}
+                  key={`${label}-${idx}`}
                   type="button"
                   className={`weekday-pill ${active ? 'is-active' : ''}`}
-                  onClick={() => toggleDay(index as Weekday)}
+                  onClick={() => toggleDay(id)}
                   aria-pressed={active}
                 >
-                  {name.slice(0, 1)}
+                  {label}
                 </button>
               )
             })}

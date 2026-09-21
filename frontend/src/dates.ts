@@ -7,7 +7,7 @@
  * keep that convention in one place.
  */
 
-export const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
+export const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
 
 /** `2026-09-23` for a Date, in local time (not `toISOString`, which shifts to UTC). */
 export function toDateInput(date: Date): string {
@@ -20,10 +20,10 @@ export function parseLocal(value: string): Date {
   return new Date(value)
 }
 
-/** Monday of the week containing `date`. */
+/** Sunday of the week containing `date`. Matches Notion Calendar Sunday-first grid. */
 export function startOfWeek(date: Date): Date {
   const result = new Date(date)
-  const offset = (result.getDay() + 6) % 7 // JS weeks start Sunday; ours start Monday.
+  const offset = result.getDay() // JS Sunday is 0
   result.setDate(result.getDate() - offset)
   result.setHours(0, 0, 0, 0)
   return result
@@ -72,16 +72,20 @@ export function addMonths(date: Date, months: number): Date {
 }
 
 /**
- * The days a month grid draws: whole weeks, Monday-first, covering the month
+ * The days a month grid draws: whole weeks, Sunday-first, covering the month
  * and the days either side that share its first and last weeks.
- *
- * Always six rows. A month can genuinely need six, and a grid that changed
- * height between May and June would make the whole page jump when paging
- * through - worse than one trailing row of greyed-out dates.
+ * Computes exactly 35 or 42 days (5 or 6 rows) based on the month calendar boundaries.
  */
 export function monthGrid(month: Date): Date[] {
   const first = startOfWeek(startOfMonth(month))
-  return Array.from({ length: 42 }, (_, index) => addDays(first, index))
+  const lastOfMonth = endOfMonth(month)
+  const lastSaturday = new Date(lastOfMonth)
+  const offsetToEndOfWeek = 6 - lastSaturday.getDay()
+  lastSaturday.setDate(lastSaturday.getDate() + offsetToEndOfWeek)
+
+  const diffTime = lastSaturday.getTime() - first.getTime()
+  const totalDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1
+  return Array.from({ length: totalDays }, (_, index) => addDays(first, index))
 }
 
 /** `September 2026`. */

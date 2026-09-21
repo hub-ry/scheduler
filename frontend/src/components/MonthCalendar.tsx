@@ -20,29 +20,21 @@ export interface PreviewEvent {
   label: string
 }
 
-export interface DayRange {
-  start: Date
-  end: Date
-}
-
 interface Props {
   month: Date
   blocks: Busy[]
   preview?: PreviewEvent | null
-  dense?: boolean
-  onPickDay?: (day: Date, at: { x: number; y: number }) => void
-  onSelectRange?: (range: DayRange) => void
   highlight?: Date | null
+  onPickDay?: (day: Date, at: { x: number; y: number }) => void
+  onMonthChange?: (month: Date) => void
+  onManageInCalendar?: () => void
   onDeleteEvent?: (id: number) => void
   onMoveEvent?: (block: Busy, day: Date) => void
+  headerActions?: React.ReactNode
 }
 
 function blockKey(block: Busy): string {
   return `${block.kind}-${block.label}-${block.start}-${block.event_id ?? ''}`
-}
-
-function orderRange(a: Date, b: Date): DayRange {
-  return a <= b ? { start: a, end: b } : { start: b, end: a }
 }
 
 const KIND_NAMES: Record<Busy['kind'], string> = {
@@ -51,47 +43,36 @@ const KIND_NAMES: Record<Busy['kind'], string> = {
   event: 'Competing Event',
   ours: 'Our Event',
   closed: 'Campus Closed',
-  academic: 'Academic Calendar',
+  academic: 'Academic Break',
+}
+
+function formatCellDateLabel(day: Date): { text: string; isFirst: boolean } {
+  if (day.getDate() === 1) {
+    const monthShort = day.toLocaleString('en-US', { month: 'short' })
+    return { text: `${monthShort} 1`, isFirst: true }
+  }
+  return { text: String(day.getDate()), isFirst: false }
 }
 
 export function MonthCalendar({
   month,
   blocks,
   preview = null,
-  dense = false,
-  onPickDay,
-  onSelectRange,
   highlight = null,
+  onPickDay,
+  onMonthChange,
+  onManageInCalendar,
   onDeleteEvent,
   onMoveEvent,
+  headerActions,
 }: Props) {
-  const [anchor, setAnchor] = useState<Date | null>(null)
-  const [cursor, setCursor] = useState<Date | null>(null)
   const [activeEvent, setActiveEvent] = useState<{ block: Busy; rect: DOMRect } | null>(null)
   const [dayExpanded, setDayExpanded] = useState<Date | null>(null)
 
-  // Drag selection listener for range
-  useEffect(() => {
-    if (anchor === null) return
-    function finish(event: PointerEvent) {
-      if (anchor && cursor) {
-        if (isSameDay(anchor, cursor) && onPickDay) {
-          onPickDay(anchor, { x: event.clientX, y: event.clientY })
-        } else if (!isSameDay(anchor, cursor) && onSelectRange) {
-          onSelectRange(orderRange(anchor, cursor))
-        }
-      }
-      setAnchor(null)
-      setCursor(null)
-    }
-    window.addEventListener('pointerup', finish)
-    return () => window.removeEventListener('pointerup', finish)
-  }, [anchor, cursor, onSelectRange, onPickDay])
-
-  const selecting = anchor && cursor && !isSameDay(anchor, cursor) ? orderRange(anchor, cursor) : null
   const days = useMemo(() => monthGrid(month), [month])
   const monthStart = startOfMonth(month)
-  const today = new Date()
+  const today = useMemo(() => new Date(), [])
+  const rowCount = Math.ceil(days.length / 7)
 
   const byDay = useMemo(() => {
     const buckets = new Map<string, Busy[]>()
@@ -119,127 +100,178 @@ export function MonthCalendar({
     return map
   }, [blocks])
 
-  const maxVisibleChips = dense ? 2 : 3
+  const maxVisibleChips = 3
 
   return (
-    <div className={`month-view${dense ? ' is-dense' : ''}`}>
-      <div className="month-head">
+    <div className="notion-calendar-view">
+      {/* Header bar */}
+      <div className="notion-calendar-header">
+        <div className="header-left">
+          <h2 className="notion-month-title">{formatMonth(month)}</h2>
+        </div>
+
+        <div className="header-right">
+          {headerActions}
+
+          {onManageInCalendar && (
+            <button
+              type="button"
+              className="notion-btn-manage"
+              onClick={onManageInCalendar}
+              title="Manage calendars and Google sync"
+            >
+              <Icon name="calendar21" size={15} />
+              <span>Manage in Calendar</span>
+            </button>
+          )}
+
+          {onMonthChange && (
+            <div className="notion-nav-group">
+              <button
+                type="button"
+                className="notion-nav-btn notion-nav-arrow"
+                onClick={() => onMonthChange(addMonths(month, -1))}
+                aria-label="Previous month"
+                title="Previous month"
+              >
+                <Icon name="caretLeft" size={15} />
+              </button>
+              <button
+                type="button"
+                className="notion-nav-btn notion-nav-today"
+                onClick={() => onMonthChange(startOfMonth(new Date()))}
+                title="Jump to today"
+              >
+                Today
+              </button>
+              <button
+                type="button"
+                className="notion-nav-btn notion-nav-arrow"
+                onClick={() => onMonthChange(addMonths(month, 1))}
+                aria-label="Next month"
+                title="Next month"
+              >
+                <Icon name="caretRight" size={15} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Weekday headers: Sun Mon Tue Wed Thu Fri Sat */}
+      <div className="notion-weekday-row">
         {DAY_NAMES.map((name) => (
-          <div key={name} className="month-dayname">
+          <div key={name} className="notion-weekday-label">
             {name}
           </div>
         ))}
       </div>
 
-      <div className="month-grid">
-        {days.map((day) => {
-          const key = day.toDateString()
-          const outside = day.getMonth() !== monthStart.getMonth()
-          const showsPreview = key === previewDay
-          const closed = closedDays.get(key)
-          const inRange = selecting !== null && day >= selecting.start && day <= selecting.end
-          const dayBlocks = byDay.get(key) ?? []
-          const regularBlocks = dayBlocks.filter((b) => b.kind !== 'closed')
-          const overflowCount = regularBlocks.length - maxVisibleChips
+      {/* Month grid: exactly 35 or 42 cells filling available space */}
+      <div className="notion-month-grid-wrapper">
+        <div
+          className="notion-month-grid"
+          style={{ gridTemplateRows: `repeat(${rowCount}, minmax(0, 1fr))` }}
+        >
+          {days.map((day) => {
+            const key = day.toDateString()
+            const isOutside = day.getMonth() !== monthStart.getMonth()
+            const isToday = isSameDay(day, today)
+            const showsPreview = key === previewDay
+            const closed = closedDays.get(key)
+            const isHighlighted = highlight ? isSameDay(day, highlight) : false
 
-          const cellClasses = [
-            'month-cell',
-            outside && 'is-outside',
-            isSameDay(day, today) && 'is-today',
-            showsPreview && 'has-preview',
-            closed && 'is-closed',
-            inRange && 'in-range',
-            inRange && selecting && isSameDay(day, selecting.start) && 'range-start',
-            inRange && selecting && isSameDay(day, selecting.end) && 'range-end',
-            highlight && isSameDay(day, highlight) && 'is-selected',
-            (onPickDay || onSelectRange) && 'is-pickable',
-          ]
-            .filter(Boolean)
-            .join(' ')
+            const dayBlocks = byDay.get(key) ?? []
+            const regularBlocks = dayBlocks.filter((b) => b.kind !== 'closed')
+            const overflowCount = regularBlocks.length - maxVisibleChips
+            const { text: dateText } = formatCellDateLabel(day)
 
-          return (
-            <div
-              key={key}
-              className={cellClasses}
-              onClick={
-                onPickDay && !onSelectRange
-                  ? (e) => onPickDay(day, { x: e.clientX, y: e.clientY })
-                  : undefined
-              }
-              onPointerDown={
-                onSelectRange
-                  ? (e) => {
-                      if (e.button !== 0) return
-                      setAnchor(day)
-                      setCursor(day)
-                    }
-                  : undefined
-              }
-              onPointerEnter={onSelectRange && anchor ? () => setCursor(day) : undefined}
-            >
-              <div className="cell-header">
-                <span className={`month-date${isSameDay(day, today) ? ' today-pill' : ''}`}>
-                  {day.getDate()}
-                </span>
-                {closed && (
-                  <span className="holiday-badge" title={closed.detail || closed.label}>
-                    {closed.label}
-                  </span>
-                )}
-              </div>
+            const cellClasses = [
+              'notion-cell',
+              isOutside && 'is-outside',
+              isToday && 'is-today',
+              showsPreview && 'has-preview',
+              isHighlighted && 'is-highlighted',
+              closed && 'is-closed',
+              onPickDay && 'is-clickable',
+            ]
+              .filter(Boolean)
+              .join(' ')
 
-              <div className="month-events">
-                {showsPreview && preview && (
-                  <div className="month-event is-preview" title="Proposed event slot">
-                    <span className="event-dot" />
-                    <span className="month-event-label">
-                      <strong>{formatTime(parseLocal(preview.start))}</strong> {preview.label}
+            return (
+              <div
+                key={key}
+                className={cellClasses}
+                onClick={(e) => {
+                  if (onPickDay) {
+                    onPickDay(day, { x: e.clientX, y: e.clientY })
+                  }
+                }}
+              >
+                <div className="notion-cell-header">
+                  {closed && (
+                    <span className="notion-holiday-tag" title={closed.detail || closed.label}>
+                      {closed.label}
                     </span>
+                  )}
+                  <div className="notion-date-wrap">
+                    {isToday ? (
+                      <span className="notion-today-circle">{day.getDate()}</span>
+                    ) : (
+                      <span className={`notion-cell-date ${isOutside ? 'is-outside' : ''}`}>
+                        {dateText}
+                      </span>
+                    )}
                   </div>
-                )}
+                </div>
 
-                {regularBlocks.slice(0, maxVisibleChips).map((block) => (
-                  <div
-                    key={blockKey(block)}
-                    className={`month-event kind-${block.kind}`}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setActiveEvent({
-                        block,
-                        rect: e.currentTarget.getBoundingClientRect(),
-                      })
-                    }}
-                  >
-                    <span className="event-dot" />
-                    <span className="month-event-label">
-                      {block.kind === 'academic' ? (
-                        block.label
-                      ) : (
-                        <>
-                          <span className="event-time">{formatTime(parseLocal(block.start))}</span>{' '}
-                          {block.label}
-                        </>
+                <div className="notion-cell-events">
+                  {showsPreview && preview && (
+                    <div className="notion-event-chip is-preview" title="Proposed event slot">
+                      <span className="chip-badge">★</span>
+                      <span className="chip-time">{formatTime(parseLocal(preview.start))}</span>
+                      <span className="chip-label">{preview.label}</span>
+                    </div>
+                  )}
+
+                  {regularBlocks.slice(0, maxVisibleChips).map((block) => (
+                    <div
+                      key={blockKey(block)}
+                      className={`notion-event-chip kind-${block.kind}`}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setActiveEvent({
+                          block,
+                          rect: e.currentTarget.getBoundingClientRect(),
+                        })
+                      }}
+                      title={`${block.label} (${formatTime(parseLocal(block.start))} - ${formatTime(parseLocal(block.end))})`}
+                    >
+                      <span className={`chip-dot kind-${block.kind}`} />
+                      {block.kind !== 'academic' && (
+                        <span className="chip-time">{formatTime(parseLocal(block.start))}</span>
                       )}
-                    </span>
-                  </div>
-                ))}
+                      <span className="chip-label">{block.label}</span>
+                    </div>
+                  ))}
 
-                {overflowCount > 0 && (
-                  <button
-                    type="button"
-                    className="overflow-pill"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setDayExpanded(day)
-                    }}
-                  >
-                    +{overflowCount} more
-                  </button>
-                )}
+                  {overflowCount > 0 && (
+                    <button
+                      type="button"
+                      className="notion-overflow-chip"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setDayExpanded(day)
+                      }}
+                    >
+                      +{overflowCount} more
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
 
       {activeEvent && (
@@ -321,9 +353,8 @@ function EventDetailsPopover({
     }
   }, [onClose])
 
-  // Calculate smart placement relative to anchorRect
   const style = useMemo(() => {
-    const margin = 10
+    const margin = 8
     const popWidth = 320
     let left = anchorRect.left
     if (left + popWidth > window.innerWidth - 16) {
@@ -339,25 +370,25 @@ function EventDetailsPopover({
   }, [anchorRect])
 
   return (
-    <div className="event-popover-portal">
-      <div ref={popoverRef} className="event-popover" style={style} role="dialog">
-        <div className="popover-header">
-          <span className={`event-badge kind-${block.kind}`}>{KIND_NAMES[block.kind]}</span>
-          <button type="button" className="btn-icon" onClick={onClose} aria-label="Close">
+    <div className="notion-popover-portal">
+      <div ref={popoverRef} className="notion-popover" style={style} role="dialog">
+        <div className="notion-popover-header">
+          <span className={`notion-kind-tag kind-${block.kind}`}>{KIND_NAMES[block.kind]}</span>
+          <button type="button" className="notion-btn-icon" onClick={onClose} aria-label="Close">
             <Icon name="x" size={14} />
           </button>
         </div>
 
-        <h4 className="popover-title">{block.label}</h4>
+        <h4 className="notion-popover-title">{block.label}</h4>
 
-        <div className="popover-meta">
-          <div className="meta-item">
-            <Icon name="calendar" size={15} />
+        <div className="notion-popover-meta">
+          <div className="meta-row">
+            <Icon name="calendar" size={14} />
             <span>{formatDay(start)}</span>
           </div>
           {!isWholeDay && (
-            <div className="meta-item">
-              <Icon name="clock" size={15} />
+            <div className="meta-row">
+              <Icon name="clock" size={14} />
               <span>
                 {formatTime(start)} - {formatTime(end)}
               </span>
@@ -365,23 +396,23 @@ function EventDetailsPopover({
           )}
         </div>
 
-        {block.detail && <p className="popover-detail">{block.detail}</p>}
+        {block.detail && <p className="notion-popover-detail">{block.detail}</p>}
 
         {block.weight > 0 && !isWholeDay && (
-          <div className="popover-attendance">
+          <div className="notion-popover-attendance">
             <Icon name="users" size={14} />
             <span>Affects ~{Math.round(block.weight)} students</span>
           </div>
         )}
 
         {(onDelete || onMove) && (
-          <div className="popover-actions">
+          <div className="notion-popover-actions">
             {!confirmDelete && !showReschedule && (
               <>
                 {onMove && (
                   <button
                     type="button"
-                    className="btn-outline-sm"
+                    className="notion-btn-subtle-sm"
                     onClick={() => {
                       setRescheduleDate(toDateInput(start))
                       setShowReschedule(true)
@@ -393,7 +424,7 @@ function EventDetailsPopover({
                 {onDelete && (
                   <button
                     type="button"
-                    className="btn-danger-sm"
+                    className="notion-btn-danger-sm"
                     onClick={() => setConfirmDelete(true)}
                   >
                     <Icon name="trash" size={13} />
@@ -404,35 +435,41 @@ function EventDetailsPopover({
             )}
 
             {confirmDelete && (
-              <div className="confirm-delete-box">
-                <span>Delete this event?</span>
-                <div className="confirm-buttons">
-                  <button type="button" className="btn-secondary-xs" onClick={() => setConfirmDelete(false)}>
+              <div className="notion-confirm-box">
+                <span>Delete event?</span>
+                <div className="confirm-btn-row">
+                  <button
+                    type="button"
+                    className="notion-btn-subtle-xs"
+                    onClick={() => setConfirmDelete(false)}
+                  >
                     Cancel
                   </button>
-                  <button type="button" className="btn-danger-xs" onClick={onDelete}>
-                    Confirm Delete
+                  <button type="button" className="notion-btn-danger-xs" onClick={onDelete}>
+                    Confirm
                   </button>
                 </div>
               </div>
             )}
 
             {showReschedule && (
-              <div className="reschedule-box">
-                <label htmlFor="resched-date">New Date:</label>
+              <div className="notion-reschedule-box">
                 <input
-                  id="resched-date"
                   type="date"
                   value={rescheduleDate}
                   onChange={(e) => setRescheduleDate(e.target.value)}
                 />
-                <div className="confirm-buttons">
-                  <button type="button" className="btn-secondary-xs" onClick={() => setShowReschedule(false)}>
+                <div className="confirm-btn-row">
+                  <button
+                    type="button"
+                    className="notion-btn-subtle-xs"
+                    onClick={() => setShowReschedule(false)}
+                  >
                     Cancel
                   </button>
                   <button
                     type="button"
-                    className="btn-primary-xs"
+                    className="notion-btn-primary-xs"
                     onClick={() => {
                       if (rescheduleDate && onMove) {
                         onMove(parseLocal(`${rescheduleDate}T00:00:00`))
@@ -463,14 +500,14 @@ function DayEventsModal({
   onEventClick: (block: Busy, rect: DOMRect) => void
 }) {
   return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal-card day-events-modal" role="dialog">
-        <div className="modal-header">
+    <div className="notion-modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="notion-modal-card day-events-modal" role="dialog">
+        <div className="notion-modal-header">
           <div>
-            <span className="text-muted text-xs uppercase font-mono">Events for</span>
+            <div className="section-label">Events for</div>
             <h3>{formatDay(day)}</h3>
           </div>
-          <button type="button" className="btn-icon" onClick={onClose} aria-label="Close">
+          <button type="button" className="notion-modal-close" onClick={onClose} aria-label="Close">
             <Icon name="x" size={16} />
           </button>
         </div>
@@ -483,69 +520,19 @@ function DayEventsModal({
               onClick={(e) => onEventClick(block, e.currentTarget.getBoundingClientRect())}
             >
               <div className="day-modal-event-head">
-                <span className={`event-badge kind-${block.kind}`}>{KIND_NAMES[block.kind]}</span>
-                <span className="text-muted text-sm">
+                <span className={`notion-kind-tag kind-${block.kind}`}>{KIND_NAMES[block.kind]}</span>
+                <span className="meta-time">
                   {block.kind === 'closed' || block.kind === 'academic'
                     ? 'All Day'
                     : `${formatTime(parseLocal(block.start))} - ${formatTime(parseLocal(block.end))}`}
                 </span>
               </div>
-              <strong className="day-modal-event-title">{block.label}</strong>
-              {block.detail && <p className="text-muted text-xs mt-1">{block.detail}</p>}
+              <div className="day-modal-title">{block.label}</div>
+              {block.detail && <p className="day-modal-detail">{block.detail}</p>}
             </div>
           ))}
         </div>
       </div>
-    </div>
-  )
-}
-
-export function MonthToolbar({
-  month,
-  onChange,
-  children,
-  label,
-  step = 1,
-}: {
-  month: Date
-  onChange: (month: Date) => void
-  children?: React.ReactNode
-  label?: string
-  step?: number
-}) {
-  return (
-    <div className="month-toolbar">
-      <div className="toolbar-left">
-        <button
-          className="btn-toolbar"
-          type="button"
-          onClick={() => onChange(startOfMonth(new Date()))}
-          title="Jump to today"
-        >
-          Today
-        </button>
-        <div className="nav-arrows">
-          <button
-            className="btn-icon-toolbar"
-            type="button"
-            aria-label="Previous month"
-            onClick={() => onChange(addMonths(month, -step))}
-          >
-            <Icon name="caretLeft" size={16} />
-          </button>
-          <button
-            className="btn-icon-toolbar"
-            type="button"
-            aria-label="Next month"
-            onClick={() => onChange(addMonths(month, step))}
-          >
-            <Icon name="caretRight" size={16} />
-          </button>
-        </div>
-        <h2 className="month-title">{label ?? formatMonth(month)}</h2>
-      </div>
-
-      <div className="toolbar-right">{children}</div>
     </div>
   )
 }

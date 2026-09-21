@@ -6,9 +6,10 @@ import { useToast } from '../toastContext'
 interface Props {
   onChanged: () => void
   refreshKey: number
+  onFindTime?: (idea: Idea) => void
 }
 
-export function Ideas({ onChanged, refreshKey }: Props) {
+export function Ideas({ onChanged, refreshKey, onFindTime }: Props) {
   const { showToast } = useToast()
   const [ideas, setIdeas] = useState<Idea[]>([])
   const [title, setTitle] = useState('')
@@ -197,7 +198,20 @@ export function Ideas({ onChanged, refreshKey }: Props) {
                     Scheduled
                   </span>
                 ) : (
-                  <span className="status-badge status-ready">Ready to Plan</span>
+                  <>
+                    <span className="status-badge status-ready">Ready to Plan</span>
+                    {onFindTime && (
+                      <button
+                        type="button"
+                        className="notion-btn-find-slot"
+                        onClick={() => onFindTime(idea)}
+                        title="Find best available time slot"
+                      >
+                        <Icon name="sparkle" size={12} />
+                        <span>Find Slot</span>
+                      </button>
+                    )}
+                  </>
                 )}
 
                 <button

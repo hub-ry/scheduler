@@ -1,42 +1,62 @@
 import { useState } from 'react'
+import type { Idea } from './api'
 import { CalendarTab } from './components/CalendarTab'
 import { Icon, type IconName } from './components/Icons'
-import { Schedule } from './components/Schedule'
+import { Ideas } from './components/Ideas'
+import { QuickAddEvent } from './components/QuickAddEvent'
 import { Setup } from './components/Setup'
 import { ThemeToggle } from './components/ThemeToggle'
 import { ToastProvider } from './components/Toast'
+import { useToast } from './toastContext'
 import { useTheme } from './theme'
 
-type Tab = 'schedule' | 'calendar' | 'setup'
+type Tab = 'calendar' | 'ideas' | 'setup'
 
 const TABS: { id: Tab; label: string; icon: IconName }[] = [
-  { id: 'schedule', label: 'Schedule', icon: 'sparkle' },
   { id: 'calendar', label: 'Calendar', icon: 'calendar' },
-  { id: 'setup', label: 'Setup', icon: 'lightbulb' },
+  { id: 'ideas', label: 'Ideas', icon: 'lightbulb' },
+  { id: 'setup', label: 'Settings', icon: 'desktop' },
 ]
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>('schedule')
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
+  )
+}
+
+function AppContent() {
+  const { showToast } = useToast()
+  const [tab, setTab] = useState<Tab>('calendar')
   const [refreshKey, setRefreshKey] = useState(0)
   const [theme, setTheme] = useTheme()
+  const [finderOpen, setFinderOpen] = useState(false)
+  const [activeIdea, setActiveIdea] = useState<Idea | null>(null)
+  const [quickAddOpen, setQuickAddOpen] = useState(false)
 
   const invalidate = () => setRefreshKey((key) => key + 1)
 
+  function handleScheduleIdea(idea: Idea) {
+    setActiveIdea(idea)
+    setFinderOpen(true)
+    setTab('calendar')
+  }
+
   return (
-    <ToastProvider>
-      <div className="app-layout">
-        <header className="navbar">
-          <div className="navbar-brand">
-            <div className="brand-logo">
-              <Icon name="calendar" size={18} />
+    <div className="notion-app-shell">
+      <header className="notion-topbar">
+        <div className="notion-topbar-left">
+          <div className="notion-brand">
+            <div className="brand-logo-wrap">
+              <Icon name="calendar" size={15} />
             </div>
-            <div className="brand-text">
-              <span className="brand-name">Scheduler</span>
-              <span className="brand-tag">Purdue CS</span>
-            </div>
+            <span className="brand-name">Scheduler</span>
+            <span className="brand-divider">/</span>
+            <span className="brand-tag">Purdue CS</span>
           </div>
 
-          <nav className="nav-segmented-control" role="tablist">
+          <nav className="notion-nav-tabs" role="tablist">
             {TABS.map(({ id, label, icon }) => {
               const isActive = tab === id
               return (
@@ -44,33 +64,84 @@ export default function App() {
                   key={id}
                   role="tab"
                   aria-selected={isActive}
-                  className={`nav-segment-btn ${isActive ? 'is-active' : ''}`}
-                  onClick={() => setTab(id)}
+                  className={`notion-tab-link ${isActive ? 'is-active' : ''}`}
+                  onClick={() => {
+                    setTab(id)
+                    if (id !== 'calendar') {
+                      setFinderOpen(false)
+                      setActiveIdea(null)
+                    }
+                  }}
                 >
-                  <Icon name={icon} size={15} />
+                  <Icon name={icon} size={14} />
                   <span>{label}</span>
                 </button>
               )
             })}
           </nav>
+        </div>
 
-          <div className="navbar-actions">
-            <ThemeToggle theme={theme} onChange={setTheme} />
-          </div>
-        </header>
-
-        <main className="app-body">
-          {tab === 'schedule' && (
-            <Schedule onChanged={invalidate} refreshKey={refreshKey} />
-          )}
+        <div className="notion-topbar-right">
           {tab === 'calendar' && (
-            <CalendarTab refreshKey={refreshKey} onChanged={invalidate} />
+            <>
+              <button
+                type="button"
+                className={`notion-btn-secondary ${finderOpen ? 'is-active' : ''}`}
+                onClick={() => setFinderOpen(!finderOpen)}
+                title="Find best conflict-free time slots"
+              >
+                <Icon name="sparkle" size={13} />
+                <span>Find Best Time</span>
+              </button>
+
+              <button
+                type="button"
+                className="notion-btn-secondary"
+                onClick={() => setQuickAddOpen(true)}
+                title="Add new event"
+              >
+                <Icon name="plus" size={13} />
+                <span>Add Event</span>
+              </button>
+            </>
           )}
-          {tab === 'setup' && (
-            <Setup onChanged={invalidate} refreshKey={refreshKey} />
-          )}
-        </main>
-      </div>
-    </ToastProvider>
+
+          <ThemeToggle theme={theme} onChange={setTheme} />
+        </div>
+      </header>
+
+      <main className="notion-body">
+        {tab === 'calendar' && (
+          <CalendarTab
+            key={`cal-${activeIdea ? activeIdea.id : 'default'}`}
+            refreshKey={refreshKey}
+            onChanged={invalidate}
+            finderOpen={finderOpen}
+            onToggleFinder={() => setFinderOpen(!finderOpen)}
+            initialIdea={activeIdea}
+          />
+        )}
+        {tab === 'ideas' && (
+          <Ideas
+            refreshKey={refreshKey}
+            onChanged={invalidate}
+            onFindTime={handleScheduleIdea}
+          />
+        )}
+        {tab === 'setup' && (
+          <Setup refreshKey={refreshKey} onChanged={invalidate} />
+        )}
+      </main>
+
+      {quickAddOpen && (
+        <QuickAddEvent
+          onClose={() => setQuickAddOpen(false)}
+          onAdded={() => {
+            invalidate()
+            showToast('Event added successfully', 'success')
+          }}
+        />
+      )}
+    </div>
   )
 }
