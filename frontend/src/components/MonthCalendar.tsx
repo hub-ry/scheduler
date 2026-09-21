@@ -381,24 +381,25 @@ function MonthGrid({
           const key = day.toDateString()
           const isOutside = day.getMonth() !== monthStart.getMonth()
           const isToday = isSameDay(day, today)
-          const showsPreview = key === previewDay
-          const closed = closedDays.get(key)
-          const isHighlighted = highlight ? isSameDay(day, highlight) : false
+          const showsPreview = !isOutside && key === previewDay
+          const closed = !isOutside ? closedDays.get(key) : undefined
+          const isHighlighted = !isOutside && highlight ? isSameDay(day, highlight) : false
 
-          const dayBlocks = blocksByDay.get(key) ?? []
+          // Days outside the target month do not show events to prevent overlap across months
+          const dayBlocks = isOutside ? [] : (blocksByDay.get(key) ?? [])
           const regularBlocks = dayBlocks.filter((b) => b.kind !== 'closed')
-          const overflowCount = regularBlocks.length - maxVisibleChips
+          const overflowCount = isOutside ? 0 : regularBlocks.length - maxVisibleChips
           const { text: dateText } = formatCellDateLabel(day)
 
           const cellClasses = [
             'notion-cell',
             dense && 'is-dense',
             isOutside && 'is-outside',
-            isToday && 'is-today',
+            isToday && !isOutside && 'is-today',
             showsPreview && 'has-preview',
             isHighlighted && 'is-highlighted',
             closed && 'is-closed',
-            'is-clickable',
+            !isOutside && 'is-clickable',
           ]
             .filter(Boolean)
             .join(' ')
@@ -408,6 +409,7 @@ function MonthGrid({
               key={key}
               className={cellClasses}
               onClick={(e) => {
+                if (isOutside) return
                 // If dense, clicking cell opens DayEventsModal to easily view all events
                 if (dense) {
                   onExpandDay(day)
@@ -416,7 +418,7 @@ function MonthGrid({
                 }
               }}
               title={
-                dense && regularBlocks.length > 0
+                !isOutside && dense && regularBlocks.length > 0
                   ? `${formatDay(day)}: ${regularBlocks.length} event(s). Click to view details.`
                   : undefined
               }

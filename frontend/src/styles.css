@@ -1,13 +1,78 @@
 /*
- * Scheduler Design System - Spill Palette
- * Roasted espresso, warm paper cream, matcha green, red clay accents, and tactile grain.
+ * Scheduler Design System
+ * Themes: Default (Notion Calendar dark) and Coffee (Spill roasted espresso)
  */
 
-:root {
+:root,
+[data-theme="default"] {
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-brand: 'Instrument Serif', Georgia, serif;
 
-  /* Spill Palette: Vienna Coffee House Aesthetic */
+  /* Notion Calendar Default Theme */
+  --bg-app: #181818;
+  --bg-surface: #202020;
+  --bg-surface-hover: #292929;
+  --bg-surface-active: #323232;
+  --bg-panel: #1b1b1b;
+  --bg-card: #242424;
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-default: rgba(255, 255, 255, 0.13);
+  --border-strong: rgba(255, 255, 255, 0.24);
+
+  --text-primary: #ffffff;
+  --text-secondary: #a3a3a3;
+  --text-muted: #6e6e6e;
+  --text-faint: #484848;
+
+  --accent: #2383e2;
+  --accent-hover: #1a73cb;
+  --accent-soft: rgba(35, 131, 226, 0.16);
+  --accent-border: rgba(35, 131, 226, 0.35);
+
+  --notion-red: #eb5757;
+  --notion-green: #27ae60;
+  --notion-orange: #f2994a;
+  --notion-purple: #9b51e0;
+  --notion-blue: #2383e2;
+
+  /* Event Chips (Notion Palette) */
+  --chip-ours-bg: rgba(35, 131, 226, 0.18);
+  --chip-ours-text: #529cca;
+  --chip-ours-border: rgba(35, 131, 226, 0.38);
+
+  --chip-event-bg: rgba(155, 81, 224, 0.18);
+  --chip-event-text: #b388eb;
+  --chip-event-border: rgba(155, 81, 224, 0.38);
+
+  --chip-exam-bg: rgba(235, 87, 87, 0.18);
+  --chip-exam-text: #ff7676;
+  --chip-exam-border: rgba(235, 87, 87, 0.38);
+
+  --chip-closed-bg: rgba(255, 255, 255, 0.08);
+  --chip-closed-text: #b0b0b0;
+  --chip-closed-border: rgba(255, 255, 255, 0.16);
+
+  --chip-academic-bg: rgba(242, 153, 74, 0.18);
+  --chip-academic-text: #f5a623;
+  --chip-academic-border: rgba(242, 153, 74, 0.38);
+
+  --chip-preview-bg: rgba(35, 131, 226, 0.28);
+  --chip-preview-text: #ffffff;
+  --chip-preview-border: #2383e2;
+
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-full: 9999px;
+}
+
+[data-theme="coffee"] {
+  --font-brand: 'Instrument Serif', Georgia, serif;
+
+  /* Coffee / Spill Palette */
   --bg-app: #1c1513;
   --bg-surface: #241c19;
   --bg-surface-hover: #2e2320;
@@ -59,12 +124,6 @@
   --chip-preview-bg: rgba(185, 90, 45, 0.28);
   --chip-preview-text: #f6eee3;
   --chip-preview-border: #b95a2d;
-
-  --radius-xs: 3px;
-  --radius-sm: 5px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-full: 9999px;
 }
 
 /* Base Reset */
@@ -122,50 +181,64 @@ button, input, select, textarea {
 
 .notion-brand {
   display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.brand-logo-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: var(--radius-xs);
-  background: var(--accent-soft);
-  color: var(--accent);
-  border: 1px solid var(--accent-border);
-}
-
-.brand-text-block {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: baseline;
+  gap: 7px;
+  user-select: none;
 }
 
 .brand-name {
-  font-size: 13.5px;
-  font-weight: 700;
+  font-family: var(--font-brand, 'Instrument Serif', Georgia, serif);
+  font-size: 24px;
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: -0.01em;
+  line-height: 1;
   color: var(--text-primary);
-  letter-spacing: 0.02em;
+  display: inline-block;
 }
 
-.brand-divider {
-  font-size: 13px;
-  color: var(--text-faint);
-}
-
-.brand-tag {
+.brand-sub {
   font-size: 11px;
-  font-weight: 600;
-  color: var(--accent);
-  background: var(--accent-soft);
-  border: 1px solid var(--accent-border);
-  padding: 1px 6px;
-  border-radius: var(--radius-xs);
-  letter-spacing: 0.03em;
+  font-weight: 500;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.notion-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  gap: 2px;
+  user-select: none;
+}
+
+.notion-theme-pill {
+  padding: 3px 8px;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.notion-theme-pill:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface-hover);
+}
+
+.notion-theme-pill.is-active {
+  color: var(--text-primary);
+  background: var(--bg-surface-active);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
 .notion-nav-tabs {
@@ -603,6 +676,28 @@ button, input, select, textarea {
 
 .notion-cell:hover {
   background: rgba(255, 255, 255, 0.02);
+}
+
+.notion-cell.is-clickable {
+  cursor: pointer;
+}
+
+.notion-cell.is-clickable:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.notion-cell.is-outside {
+  background: rgba(0, 0, 0, 0.14);
+  opacity: 0.22;
+  filter: blur(1.5px);
+  pointer-events: none;
+  cursor: default;
+}
+
+.notion-cell.is-dense.is-outside {
+  opacity: 0.18;
+  filter: blur(2px);
+  background: rgba(0, 0, 0, 0.18);
 }
 
 .notion-cell.is-highlighted {
@@ -2186,9 +2281,9 @@ button, input, select, textarea {
   line-height: 1;
 }
 
-/* Tactile Paper Grain Overlay */
+/* Tactile Paper Grain Overlay (Coffee Theme) */
 .grain-overlay {
-  display: block;
+  display: none;
   position: fixed;
   top: 0;
   left: 0;
@@ -2200,15 +2295,23 @@ button, input, select, textarea {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
 }
 
-/* Ambient Spilled Coffee Ring Art */
+/* Ambient Spilled Coffee Ring Art (Coffee Theme) */
 .spill-ambient-ring {
-  display: block;
+  display: none;
   position: absolute;
   bottom: 14px;
   right: 18px;
   pointer-events: none;
   z-index: 1;
   opacity: 0.75;
+}
+
+[data-theme="coffee"] .grain-overlay {
+  display: block;
+}
+
+[data-theme="coffee"] .spill-ambient-ring {
+  display: block;
 }
 
 /* Spinning Animation */
