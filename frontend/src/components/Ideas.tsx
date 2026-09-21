@@ -1,22 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, ApiError, type Idea } from '../api'
-import { formatDay, formatTime, parseLocal } from '../dates'
-
-/**
- * The brainstorm board: what we want to run this semester, in priority order.
- *
- * A single column of cards you drag to reorder, because the order *is* the
- * content - it is the club's answer to "what matters most", and a grid or a
- * table would say nothing a list does not.
- *
- * Reordering is optimistic. Dragging a card and watching it snap back while a
- * request lands would make the board feel broken; the list is restored and the
- * error shown only if the write actually fails.
- *
- * Uses the HTML drag-and-drop API rather than a library. One vertical list with
- * no nesting and no cross-container moves is the case it handles well, and it
- * keeps the dependency list at react and react-dom.
- */
+import { Icon } from './Icons'
+import { useToast } from '../toastContext'
 
 interface Props {
   onChanged: () => void
@@ -24,14 +9,13 @@ interface Props {
 }
 
 export function Ideas({ onChanged, refreshKey }: Props) {
+  const { showToast } = useToast()
   const [ideas, setIdeas] = useState<Idea[]>([])
   const [title, setTitle] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-
-  /** Index being dragged, and the index it would land at. */
-  const [from, setFrom] = useState<number | null>(null)
-  const [over, setOver] = useState<number | null>(null)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editTitle, setEditTitle] = useState('')
 
   function describe(caught: unknown): string {
     return caught instanceof ApiError || caught instanceof Error ? caught.message : String(caught)
@@ -44,144 +28,198 @@ export function Ideas({ onChanged, refreshKey }: Props) {
       .catch((caught) => setError(describe(caught)))
   }, [refreshKey])
 
-  async function add(event: React.FormEvent) {
-    event.preventDefault()
-    if (title.trim() === '') return
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault()
+    if (!title.trim()) return
     setBusy(true)
     setError(null)
     try {
-      const created = await api.createIdea({ title })
-      setIdeas((previous) => [...previous, created])
+      const created = await api.createIdea({ title: title.trim() })
+      setIdeas((prev) => [...prev, created])
       setTitle('')
+      onChanged()
+      showToast('Idea added to backlog', 'success')
     } catch (caught) {
       setError(describe(caught))
+      showToast(describe(caught), 'error')
     } finally {
       setBusy(false)
     }
   }
 
-  async function remove(idea: Idea) {
+  async function handleRemove(idea: Idea) {
     const before = ideas
-    setIdeas((previous) => previous.filter((i) => i.id !== idea.id))
+    setIdeas((prev) => prev.filter((i) => i.id !== idea.id))
     try {
       await api.deleteIdea(idea.id)
+      onChanged()
+      showToast(`Removed "${idea.title}"`, 'info')
     } catch (caught) {
       setIdeas(before)
       setError(describe(caught))
+      showToast(describe(caught), 'error')
     }
   }
 
-  async function rename(idea: Idea, next: string) {
-    const trimmed = next.trim()
-    if (trimmed === '' || trimmed === idea.title) return
-    const before = ideas
-    setIdeas((previous) => previous.map((i) => (i.id === idea.id ? { ...i, title: trimmed } : i)))
-    try {
-      await api.updateIdea(idea.id, { title: trimmed })
-    } catch (caught) {
-      setIdeas(before)
-      setError(describe(caught))
-    }
-  }
-
-  async function drop() {
-    if (from === null || over === null || from === over) {
-      setFrom(null)
-      setOver(null)
+  async function handleSaveRename(idea: Idea) {
+    const trimmed = editTitle.trim()
+    if (!trimmed || trimmed === idea.title) {
+      setEditingId(null)
       return
     }
     const before = ideas
+    setIdeas((prev) => prev.map((i) => (i.id === idea.id ? { ...i, title: trimmed } : i)))
+    setEditingId(null)
+    try {
+      await api.updateIdea(idea.id, { title: trimmed })
+      onChanged()
+      showToast('Idea updated', 'success')
+    } catch (caught) {
+      setIdeas(before)
+      setError(describe(caught))
+      showToast(describe(caught), 'error')
+    }
+  }
+
+  async function moveIdea(index: number, direction: 'up' | 'down') {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1
+    if (targetIndex < 0 || targetIndex >= ideas.length) return
+
     const next = [...ideas]
-    const [moved] = next.splice(from, 1)
-    next.splice(over, 0, moved)
+    const [moved] = next.splice(index, 1)
+    next.splice(targetIndex, 0, moved)
     setIdeas(next)
-    setFrom(null)
-    setOver(null)
 
     try {
       await api.reorderIdeas(next.map((i) => i.id))
       onChanged()
     } catch (caught) {
-      setIdeas(before)
+      setIdeas(ideas)
       setError(describe(caught))
+      showToast(describe(caught), 'error')
     }
   }
 
   return (
-    <div className="card">
-      <h2>Event ideas</h2>
-      <p className="hint">
-        What you want to run, most important first. Drag to reorder. Book one from the Schedule tab
-        and it gets a date here.
-      </p>
+    <div className="ideas-container">
+      <div className="card ideas-card">
+        <div className="ideas-header">
+          <div>
+            <h3>Event Ideas Backlog</h3>
+            <p className="hint">
+              Brainstorm what you want to run this term in priority order. Pick any idea when booking a slot on the Schedule tab.
+            </p>
+          </div>
+        </div>
 
-      {error && <div className="notice error">{error}</div>}
+        {error && <div className="notice error">{error}</div>}
 
-      <form className="idea-add" onSubmit={add}>
-        <input
-          value={title}
-          placeholder="Callout #2"
-          disabled={busy}
-          onChange={(event) => setTitle(event.target.value)}
-          aria-label="New idea"
-        />
-        <button className="ghost" type="submit" disabled={busy || title.trim() === ''}>
-          Add
-        </button>
-      </form>
+        <form className="add-idea-form" onSubmit={handleAdd}>
+          <input
+            value={title}
+            placeholder="e.g. Intro to Web Dev Workshop, Sponsor Tech Talk #1..."
+            disabled={busy}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <button type="submit" className="btn-primary" disabled={busy || !title.trim()}>
+            <Icon name="plus" size={14} />
+            <span>Add Idea</span>
+          </button>
+        </form>
 
-      <ol className="ideas">
-        {ideas.map((idea, index) => (
-          <li
-            key={idea.id}
-            className={[
-              'idea',
-              idea.event_id !== null && 'is-scheduled',
-              from === index && 'is-dragging',
-              over === index && from !== index && 'is-over',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            draggable
-            onDragStart={() => setFrom(index)}
-            onDragEnter={() => setOver(index)}
-            onDragOver={(event) => event.preventDefault()}
-            onDragEnd={drop}
-            onDrop={drop}
-          >
-            <span className="idea-grip" aria-hidden="true">
-              ⠿
-            </span>
+        <div className="ideas-list">
+          {ideas.map((idea, index) => (
+            <div key={idea.id} className="idea-row">
+              <div className="idea-order-col">
+                <button
+                  type="button"
+                  className="btn-arrow"
+                  disabled={index === 0}
+                  onClick={() => moveIdea(index, 'up')}
+                  aria-label="Move up"
+                >
+                  <Icon name="caretUp" size={12} />
+                </button>
+                <span className="idea-rank font-mono">#{index + 1}</span>
+                <button
+                  type="button"
+                  className="btn-arrow"
+                  disabled={index === ideas.length - 1}
+                  onClick={() => moveIdea(index, 'down')}
+                  aria-label="Move down"
+                >
+                  <Icon name="caretDown" size={12} />
+                </button>
+              </div>
 
-            <input
-              className="idea-title"
-              defaultValue={idea.title}
-              onBlur={(event) => rename(idea, event.target.value)}
-              onKeyDown={(event) => event.key === 'Enter' && event.currentTarget.blur()}
-              aria-label={`Rename ${idea.title}`}
-            />
+              <div className="idea-content">
+                {editingId === idea.id ? (
+                  <form
+                    className="inline-edit-form"
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      handleSaveRename(idea)
+                    }}
+                  >
+                    <input
+                      value={editTitle}
+                      autoFocus
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      onBlur={() => handleSaveRename(idea)}
+                      onKeyDown={(e) => e.key === 'Escape' && setEditingId(null)}
+                    />
+                    <button type="submit" className="btn-icon">
+                      <Icon name="check" size={14} />
+                    </button>
+                  </form>
+                ) : (
+                  <div className="idea-title-wrap">
+                    <span className="idea-title">{idea.title}</span>
+                    <button
+                      type="button"
+                      className="btn-icon-dim"
+                      onClick={() => {
+                        setEditingId(idea.id)
+                        setEditTitle(idea.title)
+                      }}
+                      title="Rename idea"
+                    >
+                      <Icon name="pencilSimple" size={13} />
+                    </button>
+                  </div>
+                )}
+              </div>
 
-            <span className={`idea-status${idea.event_id !== null ? ' is-booked' : ''}`}>
-              {idea.scheduled_for
-                ? `${formatDay(parseLocal(idea.scheduled_for))} · ${formatTime(
-                    parseLocal(idea.scheduled_for),
-                  )}`
-                : 'Not scheduled'}
-            </span>
+              <div className="idea-status">
+                {idea.event_id ? (
+                  <span className="status-badge status-scheduled">
+                    <Icon name="checkCircle" size={13} />
+                    Scheduled
+                  </span>
+                ) : (
+                  <span className="status-badge status-ready">Ready to Plan</span>
+                )}
 
-            <button
-              type="button"
-              className="idea-remove"
-              aria-label={`Delete ${idea.title}`}
-              onClick={() => remove(idea)}
-            >
-              ×
-            </button>
-          </li>
-        ))}
-      </ol>
+                <button
+                  type="button"
+                  className="btn-icon-danger"
+                  onClick={() => handleRemove(idea)}
+                  title="Delete idea"
+                >
+                  <Icon name="trash" size={14} />
+                </button>
+              </div>
+            </div>
+          ))}
 
-      {ideas.length === 0 && <p className="empty">Nothing yet. Add the first idea above.</p>}
+          {ideas.length === 0 && !error && (
+            <div className="empty-ideas">
+              <Icon name="lightbulb" size={32} className="text-muted" />
+              <p>No event ideas yet. Add your first brainstormed event idea above!</p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

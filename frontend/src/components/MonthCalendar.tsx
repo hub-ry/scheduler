@@ -1,28 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import type { Busy } from '../api'
 import {
   addMonths,
   DAY_NAMES,
+  formatDay,
   formatMonth,
   formatTime,
   isSameDay,
   monthGrid,
   parseLocal,
   startOfMonth,
+  toDateInput,
 } from '../dates'
-
-/**
- * Month view of the busy landscape.
- *
- * Ours rather than Google's embed iframe, for one decisive reason: the embed
- * is a sealed frame that can only render calendars made public, and nothing can
- * be drawn inside it. The whole point of this view is showing a slot you have
- * not committed to yet, sitting among the things it would compete with - which
- * is exactly what an iframe cannot do.
- *
- * Rendered from the same `/api/busy` data as the week grid, so the two can
- * never disagree about what is on a given evening.
- */
+import { Icon } from './Icons'
 
 export interface PreviewEvent {
   start: string
@@ -38,16 +28,30 @@ export interface DayRange {
 interface Props {
   month: Date
   blocks: Busy[]
-  /** A slot being considered, drawn in place among the real blocks. */
   preview?: PreviewEvent | null
-  /** Compact cells, for when this sits beside a list rather than filling the tab. */
   dense?: boolean
-  /** The day, plus where the pointer was, so a popover can open at the cursor. */
   onPickDay?: (day: Date, at: { x: number; y: number }) => void
-  /** Drag across cells to choose a date range. */
   onSelectRange?: (range: DayRange) => void
-  /** One day to mark - the day being acted on, not a range. */
   highlight?: Date | null
+  onDeleteEvent?: (id: number) => void
+  onMoveEvent?: (block: Busy, day: Date) => void
+}
+
+function blockKey(block: Busy): string {
+  return `${block.kind}-${block.label}-${block.start}-${block.event_id ?? ''}`
+}
+
+function orderRange(a: Date, b: Date): DayRange {
+  return a <= b ? { start: a, end: b } : { start: b, end: a }
+}
+
+const KIND_NAMES: Record<Busy['kind'], string> = {
+  course: 'Class Meeting',
+  exam: 'Exam Sitting',
+  event: 'Competing Event',
+  ours: 'Our Event',
+  closed: 'Campus Closed',
+  academic: 'Academic Calendar',
 }
 
 export function MonthCalendar({
@@ -58,26 +62,24 @@ export function MonthCalendar({
   onPickDay,
   onSelectRange,
   highlight = null,
+  onDeleteEvent,
+  onMoveEvent,
 }: Props) {
-  // The in-progress drag. Kept here rather than lifted, because a half-made
-  // selection is not something the rest of the app should be able to see.
   const [anchor, setAnchor] = useState<Date | null>(null)
   const [cursor, setCursor] = useState<Date | null>(null)
+  const [activeEvent, setActiveEvent] = useState<{ block: Busy; rect: DOMRect } | null>(null)
+  const [dayExpanded, setDayExpanded] = useState<Date | null>(null)
 
-  // A drag that ends outside the grid still has to end. Without this the
-  // component would stay in dragging state and paint a selection that follows
-  // the pointer around with no button held.
+  // Drag selection listener for range
   useEffect(() => {
     if (anchor === null) return
     function finish(event: PointerEvent) {
       if (anchor && cursor) {
-        // A press that never left the cell it started in is a click, not a
-        // drag of one day. Both gestures live on this grid - drag sets the
-        // search window, click adds a competing event - and this is the line
-        // between them, so a short drag cannot silently open a form.
-        if (isSameDay(anchor, cursor) && onPickDay)
+        if (isSameDay(anchor, cursor) && onPickDay) {
           onPickDay(anchor, { x: event.clientX, y: event.clientY })
-        else onSelectRange?.(orderRange(anchor, cursor))
+        } else if (!isSameDay(anchor, cursor) && onSelectRange) {
+          onSelectRange(orderRange(anchor, cursor))
+        }
       }
       setAnchor(null)
       setCursor(null)
@@ -86,16 +88,11 @@ export function MonthCalendar({
     return () => window.removeEventListener('pointerup', finish)
   }, [anchor, cursor, onSelectRange, onPickDay])
 
-  // Only the live drag paints across days. A committed window used to stay
-  // shaded, which meant a fortnight of tinted cells sitting behind everything
-  // and competing with the one day actually being acted on.
-  const dragging = anchor && cursor && !isSameDay(anchor, cursor) ? orderRange(anchor, cursor) : null
-
+  const selecting = anchor && cursor && !isSameDay(anchor, cursor) ? orderRange(anchor, cursor) : null
   const days = useMemo(() => monthGrid(month), [month])
   const monthStart = startOfMonth(month)
   const today = new Date()
 
-  // Bucket by day once rather than filtering the whole list inside all 42 cells.
   const byDay = useMemo(() => {
     const buckets = new Map<string, Busy[]>()
     for (const block of blocks) {
@@ -112,18 +109,20 @@ export function MonthCalendar({
 
   const previewDay = preview ? parseLocal(preview.start).toDateString() : null
 
-  // A closed day is not "busy", it is unusable, so the whole cell is tinted
-  // rather than the day carrying one more chip among the classes and exams.
   const closedDays = useMemo(() => {
-    const days = new Map<string, Busy>()
+    const map = new Map<string, Busy>()
     for (const block of blocks) {
-      if (block.kind === 'closed') days.set(parseLocal(block.start).toDateString(), block)
+      if (block.kind === 'closed') {
+        map.set(parseLocal(block.start).toDateString(), block)
+      }
     }
-    return days
+    return map
   }, [blocks])
 
+  const maxVisibleChips = dense ? 2 : 3
+
   return (
-    <div className={`month${dense ? ' is-dense' : ''}`}>
+    <div className={`month-view${dense ? ' is-dense' : ''}`}>
       <div className="month-head">
         {DAY_NAMES.map((name) => (
           <div key={name} className="month-dayname">
@@ -138,16 +137,20 @@ export function MonthCalendar({
           const outside = day.getMonth() !== monthStart.getMonth()
           const showsPreview = key === previewDay
           const closed = closedDays.get(key)
-          const inRange = dragging !== null && day >= dragging.start && day <= dragging.end
-          const classes = [
+          const inRange = selecting !== null && day >= selecting.start && day <= selecting.end
+          const dayBlocks = byDay.get(key) ?? []
+          const regularBlocks = dayBlocks.filter((b) => b.kind !== 'closed')
+          const overflowCount = regularBlocks.length - maxVisibleChips
+
+          const cellClasses = [
             'month-cell',
             outside && 'is-outside',
             isSameDay(day, today) && 'is-today',
             showsPreview && 'has-preview',
             closed && 'is-closed',
             inRange && 'in-range',
-            inRange && dragging && isSameDay(day, dragging.start) && 'range-start',
-            inRange && dragging && isSameDay(day, dragging.end) && 'range-end',
+            inRange && selecting && isSameDay(day, selecting.start) && 'range-start',
+            inRange && selecting && isSameDay(day, selecting.end) && 'range-end',
             highlight && isSameDay(day, highlight) && 'is-selected',
             (onPickDay || onSelectRange) && 'is-pickable',
           ]
@@ -157,87 +160,346 @@ export function MonthCalendar({
           return (
             <div
               key={key}
-              className={classes}
+              className={cellClasses}
               onClick={
                 onPickDay && !onSelectRange
-                  ? (event) => onPickDay(day, { x: event.clientX, y: event.clientY })
+                  ? (e) => onPickDay(day, { x: e.clientX, y: e.clientY })
                   : undefined
               }
               onPointerDown={
                 onSelectRange
-                  ? (event) => {
-                      // Left button only, and never start a drag from inside an
-                      // event chip - that gesture belongs to the chip.
-                      if (event.button !== 0) return
+                  ? (e) => {
+                      if (e.button !== 0) return
                       setAnchor(day)
                       setCursor(day)
                     }
                   : undefined
               }
               onPointerEnter={onSelectRange && anchor ? () => setCursor(day) : undefined}
-              role={onPickDay || onSelectRange ? 'button' : undefined}
-              tabIndex={onPickDay || onSelectRange ? 0 : undefined}
             >
-              <div className="month-date">{day.getDate()}</div>
-              <div className="month-events">
+              <div className="cell-header">
+                <span className={`month-date${isSameDay(day, today) ? ' today-pill' : ''}`}>
+                  {day.getDate()}
+                </span>
                 {closed && (
-                  <div
-                    className="month-event kind-closed"
-                    title={closed.detail || `${closed.label} - no events`}
-                  >
-                    <span className="month-event-label">{closed.label}</span>
-                  </div>
+                  <span className="holiday-badge" title={closed.detail || closed.label}>
+                    {closed.label}
+                  </span>
                 )}
+              </div>
+
+              <div className="month-events">
                 {showsPreview && preview && (
-                  <div className="month-event is-preview" title="The slot you are considering">
-                    <span className="dot" />
+                  <div className="month-event is-preview" title="Proposed event slot">
+                    <span className="event-dot" />
                     <span className="month-event-label">
-                      {formatTime(parseLocal(preview.start))} {preview.label}
+                      <strong>{formatTime(parseLocal(preview.start))}</strong> {preview.label}
                     </span>
                   </div>
                 )}
-                {(byDay.get(key) ?? []).map((block) =>
-                  block.kind === 'closed' ? null : block.kind === 'academic' ? (
-                    // A milestone owns the whole day, so a start time would be
-                    // meaningless noise beside it.
-                    <div
-                      key={`${block.label}-${block.start}`}
-                      className="month-event kind-academic"
-                      title={block.detail || block.label}
-                    >
-                      <span className="dot" />
-                      <span className="month-event-label">{block.label}</span>
-                    </div>
-                  ) : (
-                    <div
-                      key={`${block.label}-${block.start}`}
-                      className={`month-event kind-${block.kind}`}
-                      title={`${block.label}\n${formatTime(parseLocal(block.start))} - ${formatTime(
-                        parseLocal(block.end),
-                      )}`}
-                    >
-                      <span className="dot" />
-                      <span className="month-event-label">
-                        {formatTime(parseLocal(block.start))} {block.label}
-                      </span>
-                    </div>
-                  ),
+
+                {regularBlocks.slice(0, maxVisibleChips).map((block) => (
+                  <div
+                    key={blockKey(block)}
+                    className={`month-event kind-${block.kind}`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setActiveEvent({
+                        block,
+                        rect: e.currentTarget.getBoundingClientRect(),
+                      })
+                    }}
+                  >
+                    <span className="event-dot" />
+                    <span className="month-event-label">
+                      {block.kind === 'academic' ? (
+                        block.label
+                      ) : (
+                        <>
+                          <span className="event-time">{formatTime(parseLocal(block.start))}</span>{' '}
+                          {block.label}
+                        </>
+                      )}
+                    </span>
+                  </div>
+                ))}
+
+                {overflowCount > 0 && (
+                  <button
+                    type="button"
+                    className="overflow-pill"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setDayExpanded(day)
+                    }}
+                  >
+                    +{overflowCount} more
+                  </button>
                 )}
               </div>
             </div>
           )
         })}
       </div>
+
+      {activeEvent && (
+        <EventDetailsPopover
+          block={activeEvent.block}
+          anchorRect={activeEvent.rect}
+          onClose={() => setActiveEvent(null)}
+          onDelete={
+            onDeleteEvent && typeof activeEvent.block.event_id === 'number'
+              ? () => {
+                  onDeleteEvent(activeEvent.block.event_id as number)
+                  setActiveEvent(null)
+                }
+              : undefined
+          }
+          onMove={
+            onMoveEvent && typeof activeEvent.block.event_id === 'number'
+              ? (targetDay) => {
+                  onMoveEvent(activeEvent.block, targetDay)
+                  setActiveEvent(null)
+                }
+              : undefined
+          }
+        />
+      )}
+
+      {dayExpanded && (
+        <DayEventsModal
+          day={dayExpanded}
+          blocks={byDay.get(dayExpanded.toDateString()) ?? []}
+          onClose={() => setDayExpanded(null)}
+          onEventClick={(block, rect) => {
+            setDayExpanded(null)
+            setActiveEvent({ block, rect })
+          }}
+        />
+      )}
     </div>
   )
 }
 
-/** Put a dragged pair of days the right way round. */
-function orderRange(a: Date, b: Date): DayRange {
-  return a <= b ? { start: a, end: b } : { start: b, end: a }
+function EventDetailsPopover({
+  block,
+  anchorRect,
+  onClose,
+  onDelete,
+  onMove,
+}: {
+  block: Busy
+  anchorRect: DOMRect
+  onClose: () => void
+  onDelete?: () => void
+  onMove?: (day: Date) => void
+}) {
+  const popoverRef = useRef<HTMLDivElement>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [rescheduleDate, setRescheduleDate] = useState('')
+  const [showReschedule, setShowReschedule] = useState(false)
+
+  const start = parseLocal(block.start)
+  const end = parseLocal(block.end)
+  const isWholeDay = block.kind === 'closed' || block.kind === 'academic'
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    function onPointerDown(e: PointerEvent) {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    const t = setTimeout(() => window.addEventListener('pointerdown', onPointerDown), 0)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('pointerdown', onPointerDown)
+      clearTimeout(t)
+    }
+  }, [onClose])
+
+  // Calculate smart placement relative to anchorRect
+  const style = useMemo(() => {
+    const margin = 10
+    const popWidth = 320
+    let left = anchorRect.left
+    if (left + popWidth > window.innerWidth - 16) {
+      left = window.innerWidth - popWidth - 16
+    }
+    if (left < 16) left = 16
+
+    let top = anchorRect.bottom + margin
+    if (top + 280 > window.innerHeight && anchorRect.top > 280) {
+      top = anchorRect.top - 280 - margin
+    }
+    return { left: `${left}px`, top: `${top}px` }
+  }, [anchorRect])
+
+  return (
+    <div className="event-popover-portal">
+      <div ref={popoverRef} className="event-popover" style={style} role="dialog">
+        <div className="popover-header">
+          <span className={`event-badge kind-${block.kind}`}>{KIND_NAMES[block.kind]}</span>
+          <button type="button" className="btn-icon" onClick={onClose} aria-label="Close">
+            <Icon name="x" size={14} />
+          </button>
+        </div>
+
+        <h4 className="popover-title">{block.label}</h4>
+
+        <div className="popover-meta">
+          <div className="meta-item">
+            <Icon name="calendar" size={15} />
+            <span>{formatDay(start)}</span>
+          </div>
+          {!isWholeDay && (
+            <div className="meta-item">
+              <Icon name="clock" size={15} />
+              <span>
+                {formatTime(start)} - {formatTime(end)}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {block.detail && <p className="popover-detail">{block.detail}</p>}
+
+        {block.weight > 0 && !isWholeDay && (
+          <div className="popover-attendance">
+            <Icon name="users" size={14} />
+            <span>Affects ~{Math.round(block.weight)} students</span>
+          </div>
+        )}
+
+        {(onDelete || onMove) && (
+          <div className="popover-actions">
+            {!confirmDelete && !showReschedule && (
+              <>
+                {onMove && (
+                  <button
+                    type="button"
+                    className="btn-outline-sm"
+                    onClick={() => {
+                      setRescheduleDate(toDateInput(start))
+                      setShowReschedule(true)
+                    }}
+                  >
+                    Reschedule
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    type="button"
+                    className="btn-danger-sm"
+                    onClick={() => setConfirmDelete(true)}
+                  >
+                    <Icon name="trash" size={13} />
+                    <span>Delete</span>
+                  </button>
+                )}
+              </>
+            )}
+
+            {confirmDelete && (
+              <div className="confirm-delete-box">
+                <span>Delete this event?</span>
+                <div className="confirm-buttons">
+                  <button type="button" className="btn-secondary-xs" onClick={() => setConfirmDelete(false)}>
+                    Cancel
+                  </button>
+                  <button type="button" className="btn-danger-xs" onClick={onDelete}>
+                    Confirm Delete
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {showReschedule && (
+              <div className="reschedule-box">
+                <label htmlFor="resched-date">New Date:</label>
+                <input
+                  id="resched-date"
+                  type="date"
+                  value={rescheduleDate}
+                  onChange={(e) => setRescheduleDate(e.target.value)}
+                />
+                <div className="confirm-buttons">
+                  <button type="button" className="btn-secondary-xs" onClick={() => setShowReschedule(false)}>
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary-xs"
+                    onClick={() => {
+                      if (rescheduleDate && onMove) {
+                        onMove(parseLocal(`${rescheduleDate}T00:00:00`))
+                      }
+                    }}
+                  >
+                    Move
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
 
-/** Toolbar shared by every screen that pages through months. */
+function DayEventsModal({
+  day,
+  blocks,
+  onClose,
+  onEventClick,
+}: {
+  day: Date
+  blocks: Busy[]
+  onClose: () => void
+  onEventClick: (block: Busy, rect: DOMRect) => void
+}) {
+  return (
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-card day-events-modal" role="dialog">
+        <div className="modal-header">
+          <div>
+            <span className="text-muted text-xs uppercase font-mono">Events for</span>
+            <h3>{formatDay(day)}</h3>
+          </div>
+          <button type="button" className="btn-icon" onClick={onClose} aria-label="Close">
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
+        <div className="day-modal-list">
+          {blocks.map((block) => (
+            <div
+              key={blockKey(block)}
+              className={`day-modal-event kind-${block.kind}`}
+              onClick={(e) => onEventClick(block, e.currentTarget.getBoundingClientRect())}
+            >
+              <div className="day-modal-event-head">
+                <span className={`event-badge kind-${block.kind}`}>{KIND_NAMES[block.kind]}</span>
+                <span className="text-muted text-sm">
+                  {block.kind === 'closed' || block.kind === 'academic'
+                    ? 'All Day'
+                    : `${formatTime(parseLocal(block.start))} - ${formatTime(parseLocal(block.end))}`}
+                </span>
+              </div>
+              <strong className="day-modal-event-title">{block.label}</strong>
+              {block.detail && <p className="text-muted text-xs mt-1">{block.detail}</p>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function MonthToolbar({
   month,
   onChange,
@@ -248,35 +510,42 @@ export function MonthToolbar({
   month: Date
   onChange: (month: Date) => void
   children?: React.ReactNode
-  /** Overrides the title when the view spans more than the anchor month. */
   label?: string
-  /** How many months a page turn moves, so a six-month view pages by six. */
   step?: number
 }) {
   return (
     <div className="month-toolbar">
-      <button className="ghost" type="button" onClick={() => onChange(startOfMonth(new Date()))}>
-        Today
-      </button>
-      <button
-        className="ghost icon"
-        type="button"
-        aria-label="Previous month"
-        onClick={() => onChange(addMonths(month, -step))}
-      >
-        ‹
-      </button>
-      <button
-        className="ghost icon"
-        type="button"
-        aria-label="Next month"
-        onClick={() => onChange(addMonths(month, step))}
-      >
-        ›
-      </button>
-      <h3 className="month-title">{label ?? formatMonth(month)}</h3>
-      <span className="spacer" />
-      {children}
+      <div className="toolbar-left">
+        <button
+          className="btn-toolbar"
+          type="button"
+          onClick={() => onChange(startOfMonth(new Date()))}
+          title="Jump to today"
+        >
+          Today
+        </button>
+        <div className="nav-arrows">
+          <button
+            className="btn-icon-toolbar"
+            type="button"
+            aria-label="Previous month"
+            onClick={() => onChange(addMonths(month, -step))}
+          >
+            <Icon name="caretLeft" size={16} />
+          </button>
+          <button
+            className="btn-icon-toolbar"
+            type="button"
+            aria-label="Next month"
+            onClick={() => onChange(addMonths(month, step))}
+          >
+            <Icon name="caretRight" size={16} />
+          </button>
+        </div>
+        <h2 className="month-title">{label ?? formatMonth(month)}</h2>
+      </div>
+
+      <div className="toolbar-right">{children}</div>
     </div>
   )
 }

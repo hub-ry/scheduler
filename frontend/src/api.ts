@@ -76,6 +76,9 @@ export interface Busy {
   weight: number
   /** Why the day is unavailable, e.g. "University closed - no events". */
   detail?: string
+  /** Set when the block is an editable club event - what the calendar can
+   *  delete or drag. Class meetings and exams have no such row. */
+  event_id?: number | null
 }
 
 export interface Conflict {
@@ -218,6 +221,11 @@ export const api = {
 
   createEvent: (event: Omit<ClubEvent, 'id' | 'weight'>) =>
     request<ClubEvent>('/api/events', { method: 'POST', body: JSON.stringify(event) }),
+
+  updateEvent: (
+    id: number,
+    patch: Partial<Pick<ClubEvent, 'title' | 'organization' | 'location' | 'starts_at' | 'ends_at'>>,
+  ) => request<ClubEvent>(`/api/events/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
 
   deleteEvent: (id: number) => request<void>(`/api/events/${id}`, { method: 'DELETE' }),
 

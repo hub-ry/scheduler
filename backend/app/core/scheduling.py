@@ -41,6 +41,9 @@ class BusyInterval:
     weight: float
     label: str
     kind: str  # "course" | "exam" | "event" | "ours"
+    # Set only for blocks backed by a ClubEvent row. The calendar needs it to
+    # delete or move the chip you clicked; a class meeting has no such row.
+    event_id: int | None = None
 
     def overlap_with(self, start: datetime, end: datetime) -> timedelta:
         """Length of the intersection with ``[start, end)``; zero if disjoint."""
@@ -128,6 +131,7 @@ def event_to_interval(event: ClubEvent) -> BusyInterval:
         weight=event.weight,
         label=event.title,
         kind="event",
+        event_id=event.id,
     )
 
 

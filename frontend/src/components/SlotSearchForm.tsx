@@ -1,12 +1,7 @@
+import React from 'react'
 import type { Package, RankRequest, Weekday } from '../api'
-import { DAY_NAMES } from '../dates'
-
-/**
- * The constraints half of the search: window, hours, length, weekdays.
- *
- * Split out of FindTime so the planning tab can put it beside a calendar
- * without a second copy of the form drifting away from this one.
- */
+import { addDays, DAY_NAMES, endOfMonth, startOfMonth, toDateInput } from '../dates'
+import { Icon } from './Icons'
 
 interface Props {
   request: RankRequest
@@ -18,13 +13,15 @@ interface Props {
   hint?: string
 }
 
+const DURATION_PRESETS = [45, 60, 90, 120]
+
 export function SlotSearchForm({
   request,
   onChange,
   onSubmit,
   loading,
   packages = [],
-  title,
+  title = 'Find Best Times',
   hint,
 }: Props) {
   function set<K extends keyof RankRequest>(key: K, value: RankRequest[K]) {
@@ -33,8 +30,6 @@ export function SlotSearchForm({
 
   function toggleDay(day: Weekday) {
     const active = request.weekdays.includes(day)
-    // Refuse to clear the last day: the API rejects an empty list, and silently
-    // sending a request we know will fail is worse than not letting them.
     if (active && request.weekdays.length === 1) return
     set(
       'weekdays',
@@ -42,9 +37,21 @@ export function SlotSearchForm({
     )
   }
 
-  // Match by membership rather than storing an id: the request only ever
-  // carries course ids, so a package edited elsewhere stops matching, which is
-  // the honest thing to show rather than a stale name.
+  function applyPreset(preset: 'twoWeeks' | 'month' | 'nextMonth') {
+    const now = new Date()
+    if (preset === 'twoWeeks') {
+      set('window_start', toDateInput(now))
+      set('window_end', toDateInput(addDays(now, 14)))
+    } else if (preset === 'month') {
+      set('window_start', toDateInput(now))
+      set('window_end', toDateInput(endOfMonth(now)))
+    } else if (preset === 'nextMonth') {
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+      set('window_start', toDateInput(startOfMonth(nextMonth)))
+      set('window_end', toDateInput(endOfMonth(nextMonth)))
+    }
+  }
+
   const selected = request.course_ids
   const currentPackage =
     selected == null
@@ -54,51 +61,65 @@ export function SlotSearchForm({
             option.course_ids.length === selected.length &&
             option.course_ids.every((id) => selected.includes(id)),
         )
-  const currentPackageId = currentPackage?.id
 
   return (
-      <form className="card" onSubmit={onSubmit}>
-        <h2>{title ?? 'Find a time'}</h2>
-        {hint && <p className="hint">{hint}</p>}
+    <form className="search-form-card" onSubmit={onSubmit}>
+      <div className="search-form-header">
+        <div className="search-form-title">
+          <Icon name="search" size={18} className="text-accent" />
+          <h3>{title}</h3>
+        </div>
+        {hint && <span className="search-form-subtitle">{hint}</span>}
+      </div>
 
+      <div className="search-form-fields">
         {packages.length > 0 && (
-          <div className="field">
-            <label htmlFor="audience">Audience</label>
+          <div className="form-group">
+            <label htmlFor="audience-select">Target Audience</label>
             <select
-              id="audience"
-              value={currentPackageId ?? ''}
+              id="audience-select"
+              value={currentPackage?.id ?? ''}
               onChange={(e) => {
                 const chosen = packages.find((p) => String(p.id) === e.target.value)
                 set('course_ids', chosen ? chosen.course_ids : null)
               }}
             >
-              <option value="">Everyone (all tracked courses)</option>
-              {packages.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.name} ({option.course_codes.length})
+              <option value="">All Tracked Courses (9 classes)</option>
+              {packages.map((pkg) => (
+                <option key={pkg.id} value={pkg.id}>
+                  {pkg.name} ({pkg.course_codes.length} courses)
                 </option>
               ))}
             </select>
-            <span className="hint">
-              {currentPackage?.description ??
-                'Only the chosen courses\u2019 exams count against a slot.'}
-            </span>
           </div>
         )}
 
-        <div className="field">
-          <label htmlFor="from">Window</label>
-          <div className="range-row">
+        <div className="form-group">
+          <div className="label-with-presets">
+            <label htmlFor="window-from">Search Window</label>
+            <div className="preset-buttons">
+              <button type="button" className="btn-preset" onClick={() => applyPreset('twoWeeks')}>
+                2 Weeks
+              </button>
+              <button type="button" className="btn-preset" onClick={() => applyPreset('month')}>
+                This Month
+              </button>
+              <button type="button" className="btn-preset" onClick={() => applyPreset('nextMonth')}>
+                Next Month
+              </button>
+            </div>
+          </div>
+          <div className="date-range-row">
             <input
-              id="from"
+              id="window-from"
               type="date"
               value={request.window_start}
               onChange={(e) => set('window_start', e.target.value)}
               required
             />
-            <span className="range-dash">to</span>
+            <span className="date-range-arrow">→</span>
             <input
-              id="to"
+              id="window-to"
               type="date"
               value={request.window_end}
               min={request.window_start}
@@ -106,24 +127,23 @@ export function SlotSearchForm({
               required
             />
           </div>
-          <span className="hint">Or drag across the calendar.</span>
         </div>
 
-        <div className="field-row">
-          <div className="field">
-            <label htmlFor="earliest">No earlier than</label>
+        <div className="form-row-2">
+          <div className="form-group">
+            <label htmlFor="time-earliest">Earliest</label>
             <input
-              id="earliest"
+              id="time-earliest"
               type="time"
               value={request.earliest}
               onChange={(e) => set('earliest', e.target.value)}
               required
             />
           </div>
-          <div className="field">
-            <label htmlFor="latest">No later than</label>
+          <div className="form-group">
+            <label htmlFor="time-latest">Latest</label>
             <input
-              id="latest"
+              id="time-latest"
               type="time"
               value={request.latest}
               onChange={(e) => set('latest', e.target.value)}
@@ -132,51 +152,58 @@ export function SlotSearchForm({
           </div>
         </div>
 
-        <div className="field-row">
-          <div className="field">
-            <label htmlFor="duration">Length (min)</label>
-            <input
-              id="duration"
-              type="number"
-              min={15}
-              max={480}
-              step={15}
-              value={request.duration_minutes}
-              onChange={(e) => set('duration_minutes', Number(e.target.value))}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="results">Results</label>
-            <input
-              id="results"
-              type="number"
-              min={1}
-              max={200}
-              value={request.limit}
-              onChange={(e) => set('limit', Number(e.target.value))}
-            />
+        <div className="form-group">
+          <div className="label-with-presets">
+            <label htmlFor="event-duration">Duration: {request.duration_minutes}m</label>
+            <div className="preset-buttons">
+              {DURATION_PRESETS.map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  className={`btn-preset ${request.duration_minutes === d ? 'is-selected' : ''}`}
+                  onClick={() => set('duration_minutes', d)}
+                >
+                  {d}m
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="field">
-          <label>Days to consider</label>
-          <div className="daypicker">
-            {DAY_NAMES.map((name, index) => (
-              <button
-                key={name}
-                type="button"
-                aria-pressed={request.weekdays.includes(index as Weekday)}
-                onClick={() => toggleDay(index as Weekday)}
-              >
-                {name}
-              </button>
-            ))}
+        <div className="form-group">
+          <label>Days of Week</label>
+          <div className="weekday-picker">
+            {DAY_NAMES.map((name, index) => {
+              const active = request.weekdays.includes(index as Weekday)
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  className={`weekday-pill ${active ? 'is-active' : ''}`}
+                  onClick={() => toggleDay(index as Weekday)}
+                  aria-pressed={active}
+                >
+                  {name.slice(0, 1)}
+                </button>
+              )
+            })}
           </div>
         </div>
+      </div>
 
-        <button className="primary" type="submit" disabled={loading}>
-          {loading ? 'Searching…' : 'Rank the options'}
-        </button>
-      </form>
+      <button className="btn-search-primary" type="submit" disabled={loading}>
+        {loading ? (
+          <span className="flex-center gap-2">
+            <Icon name="sync" size={16} className="animate-spin" />
+            Analyzing Exam Schedules...
+          </span>
+        ) : (
+          <span className="flex-center gap-2">
+            <Icon name="sparkle" size={16} />
+            Rank Available Times
+          </span>
+        )}
+      </button>
+    </form>
   )
 }

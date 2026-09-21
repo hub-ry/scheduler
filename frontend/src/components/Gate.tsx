@@ -1,16 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, ApiError, type Session } from '../api'
-
-/**
- * The shared-password sign-in.
- *
- * Wraps the app rather than sitting on a route, because there is nothing to
- * look at before you are through it - every screen reads from the API.
- *
- * A deployment with no password configured never renders this at all: the
- * session endpoint reports the gate as unnecessary and already satisfied, so
- * running locally is unchanged.
- */
+import { Icon } from './Icons'
 
 interface Props {
   children: React.ReactNode
@@ -26,8 +16,6 @@ export function Gate({ children }: Props) {
     api
       .session()
       .then(setSession)
-      // If even this fails the server is unreachable, and a sign-in box is a
-      // more useful thing to show than a blank page.
       .catch(() => setSession({ required: true, authenticated: false }))
   }, [])
 
@@ -40,7 +28,7 @@ export function Gate({ children }: Props) {
     } catch (caught) {
       setError(
         caught instanceof ApiError && caught.status === 401
-          ? 'That is not the password.'
+          ? 'Incorrect password.'
           : caught instanceof Error
             ? caught.message
             : String(caught),
@@ -51,36 +39,41 @@ export function Gate({ children }: Props) {
     }
   }
 
-  // Nothing rendered while we find out, so the sign-in box cannot flash up in
-  // front of someone who is already signed in.
   if (session === null) return null
-
   if (session.authenticated) return <>{children}</>
 
   return (
-    <div className="gate">
-      <form className="card" onSubmit={submit}>
-        <h1>Scheduler</h1>
-        <p className="hint">Shared password.</p>
+    <div className="gate-screen">
+      <div className="gate-card">
+        <div className="gate-brand">
+          <div className="gate-icon-badge">
+            <Icon name="calendar" size={28} />
+          </div>
+          <h2>Scheduler</h2>
+          <p className="text-muted text-sm">Enter shared access password</p>
+        </div>
 
         {error && <div className="notice error">{error}</div>}
 
-        <div className="field">
-          <label htmlFor="gate-password">Password</label>
-          <input
-            id="gate-password"
-            type="password"
-            value={password}
-            autoFocus
-            disabled={busy}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </div>
+        <form onSubmit={submit} className="gate-form">
+          <div className="form-group">
+            <label htmlFor="gate-password">Password</label>
+            <input
+              id="gate-password"
+              type="password"
+              value={password}
+              autoFocus
+              disabled={busy}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="••••••••"
+            />
+          </div>
 
-        <button className="primary" type="submit" disabled={busy || password === ''}>
-          {busy ? 'Checking…' : 'Sign in'}
-        </button>
-      </form>
+          <button className="btn-primary-block" type="submit" disabled={busy || password === ''}>
+            {busy ? 'Verifying...' : 'Sign In'}
+          </button>
+        </form>
+      </div>
     </div>
   )
 }

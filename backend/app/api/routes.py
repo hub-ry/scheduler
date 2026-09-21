@@ -409,6 +409,23 @@ def create_event(payload: schemas.EventIn, session: SessionDep):
     return schemas.EventOut(**event.model_dump(), weight=event.weight)
 
 
+@guarded.patch("/events/{event_id}", response_model=schemas.EventOut)
+def update_event(event_id: int, payload: schemas.EventUpdate, session: SessionDep):
+    event = session.get(ClubEvent, event_id)
+    if event is None:
+        raise HTTPException(404, "event not found")
+    for field_name, value in payload.model_dump(exclude_unset=True).items():
+        setattr(event, field_name, value)
+    # Checked after applying, not per field: a drag moves both ends at once and
+    # either one alone would look inverted mid-update.
+    if event.ends_at <= event.starts_at:
+        raise HTTPException(422, "ends_at must be after starts_at")
+    session.add(event)
+    session.commit()
+    session.refresh(event)
+    return schemas.EventOut(**event.model_dump(), weight=event.weight)
+
+
 @guarded.delete("/events/{event_id}", status_code=204)
 def delete_event(event_id: int, session: SessionDep):
     event = session.get(ClubEvent, event_id)
@@ -425,7 +442,14 @@ def list_busy(start: datetime, end: datetime, session: SessionDep):
         raise HTTPException(422, "end must be after start")
     intervals, _ = _collect_busy(session, start, end)
     blocks = [
-        schemas.BusyOut(start=i.start, end=i.end, label=i.label, kind=i.kind, weight=i.weight)
+        schemas.BusyOut(
+            start=i.start,
+            end=i.end,
+            label=i.label,
+            kind=i.kind,
+            weight=i.weight,
+            event_id=i.event_id,
+        )
         for i in intervals
     ] + _academic_blocks(session, start, end)
     return sorted(blocks, key=lambda b: (b.start, b.kind != "closed"))

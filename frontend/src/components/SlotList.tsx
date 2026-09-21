@@ -1,23 +1,11 @@
+import { useState } from 'react'
 import type { RankResponse, Slot } from '../api'
 import { formatDay, formatTime, parseLocal } from '../dates'
+import { Icon } from './Icons'
 
-/**
- * The ranked results half of the search.
- *
- * Hovering a row is a preview gesture, not a commitment: it reports the slot up
- * so a calendar beside this list can draw it in place. Clicking is what
- * actually proposes it. Focus mirrors hover so the same preview is reachable
- * from the keyboard.
- */
-
-/**
- * Bucket a slot for colour. The thresholds are relative to the worst slot in
- * the result set rather than absolute, because the weights may be placeholders
- * whose absolute magnitude means nothing.
- */
-function tierOf(slot: Slot, worst: number): string {
-  if (slot.is_clear) return 'tier-clear'
-  return slot.lost_attendance > worst / 2 ? 'tier-heavy' : 'tier-light'
+function tierOf(slot: Slot, worst: number): 'clear' | 'light' | 'heavy' {
+  if (slot.is_clear) return 'clear'
+  return slot.lost_attendance > worst / 2 ? 'heavy' : 'light'
 }
 
 interface Props {
@@ -29,71 +17,145 @@ interface Props {
   title?: string
 }
 
-export function SlotList({ result, error, proposed, onProposeSlot, onHoverSlot, title }: Props) {
+export function SlotList({
+  result,
+  error,
+  proposed,
+  onProposeSlot,
+  onHoverSlot,
+  title = 'Ranked Suggestions',
+}: Props) {
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const worst = result ? Math.max(...result.slots.map((s) => s.lost_attendance), 1) : 1
 
   return (
-      <div className="card">
-        <h2>{title ?? 'Best times'}</h2>
-        <p className="hint">
-          {result
-            ? `${result.slots.length} shown of ${result.considered} candidate slots.`
-            : 'Set your constraints and run a search.'}
-        </p>
-
-        {error && <div className="notice error">{error}</div>}
-
-        {result && result.slots.length === 0 && (
-          <p className="empty">
-            No slot fits those constraints. Try a wider window or a shorter event.
-          </p>
+    <div className="slot-list-card">
+      <div className="slot-list-header">
+        <div className="slot-list-title-wrap">
+          <Icon name="clock" size={17} className="text-accent" />
+          <h4>{title}</h4>
+        </div>
+        {result && (
+          <span className="slot-count-badge">
+            {result.slots.length} available
+          </span>
         )}
+      </div>
 
-        <div className="slots">
-          {result?.slots.map((slot, index) => {
+      {error && <div className="notice error">{error}</div>}
+
+      {!result && !error && (
+        <div className="slot-empty-state">
+          <Icon name="calendar" size={32} className="text-muted" />
+          <p>Choose your search window and click Rank to evaluate slots against course exams.</p>
+        </div>
+      )}
+
+      {result && result.slots.length === 0 && (
+        <div className="slot-empty-state">
+          <Icon name="warningCircle" size={28} className="text-warn" />
+          <p>No available slots fit those exact constraints. Try widening your hours or window.</p>
+        </div>
+      )}
+
+      {result && result.slots.length > 0 && (
+        <div className="slot-items">
+          {result.slots.map((slot, index) => {
             const start = parseLocal(slot.start)
+            const end = parseLocal(slot.end)
             const isProposed = proposed?.start === slot.start
+            const tier = tierOf(slot, worst)
+            const isExpanded = expandedIndex === index
+
             return (
               <div
                 key={slot.start}
-                className={`slot ${tierOf(slot, worst)}`}
+                className={`slot-card tier-${tier} ${isProposed ? 'is-selected' : ''}`}
                 onClick={() => onProposeSlot(isProposed ? null : slot)}
                 onMouseEnter={() => onHoverSlot?.(slot)}
                 onMouseLeave={() => onHoverSlot?.(null)}
-                onFocus={() => onHoverSlot?.(slot)}
-                onBlur={() => onHoverSlot?.(null)}
                 role="button"
                 tabIndex={0}
-                onKeyDown={(e) => e.key === 'Enter' && onProposeSlot(isProposed ? null : slot)}
-                title="Show this slot on the calendar"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    onProposeSlot(isProposed ? null : slot)
+                  }
+                }}
               >
-                <div className="slot-head">
-                  <div className="slot-when">
-                    <span className="rank">{index + 1}</span>
-                    {formatDay(start)} · {formatTime(start)} – {formatTime(parseLocal(slot.end))}
+                <div className="slot-card-main">
+                  <div className="slot-card-left">
+                    <span className={`slot-rank-badge rank-${index + 1}`}>
+                      #{index + 1}
+                    </span>
+                    <div className="slot-time-info">
+                      <strong className="slot-day">{formatDay(start)}</strong>
+                      <span className="slot-hours">
+                        {formatTime(start)} - {formatTime(end)}
+                      </span>
+                    </div>
                   </div>
-                  <div className="slot-verdict">
-                    {slot.is_clear
-                      ? 'Nothing in the way'
-                      : `~${Math.round(slot.lost_attendance)} unavailable`}
+
+                  <div className="slot-card-right">
+                    {slot.is_clear ? (
+                      <span className="slot-verdict-badge status-clear">
+                        <Icon name="checkCircle" size={13} />
+                        Free Evening
+                      </span>
+                    ) : tier === 'light' ? (
+                      <span className="slot-verdict-badge status-light">
+                        ~{Math.round(slot.lost_attendance)} busy
+                      </span>
+                    ) : (
+                      <span className="slot-verdict-badge status-heavy">
+                        ~{Math.round(slot.lost_attendance)} busy
+                      </span>
+                    )}
+
+                    {isProposed && (
+                      <span className="selected-indicator">
+                        <Icon name="check" size={14} />
+                      </span>
+                    )}
                   </div>
                 </div>
+
                 {slot.conflicts.length > 0 && (
-                  <ul className="slot-conflicts">
-                    {slot.conflicts.map((conflict) => (
-                      <li
-                        key={`${conflict.label}-${conflict.overlap_minutes}`}
-                        className={`chip kind-${conflict.kind}`}
-                      >
-                        {conflict.label} · {Math.round(conflict.overlap_fraction * 100)}% overlap
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="slot-conflicts-wrap">
+                    <button
+                      type="button"
+                      className="btn-toggle-conflicts"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setExpandedIndex(isExpanded ? null : index)
+                      }}
+                    >
+                      <span>{slot.conflicts.length} conflict{slot.conflicts.length > 1 ? 's' : ''}</span>
+                      <Icon name={isExpanded ? 'caretUp' : 'caretDown'} size={12} />
+                    </button>
+
+                    {isExpanded && (
+                      <div className="conflicts-detail-list">
+                        {slot.conflicts.map((conflict) => (
+                          <div
+                            key={`${conflict.label}-${conflict.overlap_minutes}`}
+                            className={`conflict-pill kind-${conflict.kind}`}
+                          >
+                            <span className="conflict-name">{conflict.label}</span>
+                            <span className="conflict-overlap">
+                              {Math.round(conflict.overlap_fraction * 100)}% overlap
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             )
           })}
         </div>
-      </div>
+      )}
+    </div>
   )
 }

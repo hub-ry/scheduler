@@ -58,6 +58,13 @@ export function startOfMonth(date: Date): Date {
   return result
 }
 
+/** Last day of the month containing `date`. */
+export function endOfMonth(date: Date): Date {
+  const result = new Date(date.getFullYear(), date.getMonth() + 1, 0)
+  result.setHours(0, 0, 0, 0)
+  return result
+}
+
 export function addMonths(date: Date, months: number): Date {
   const result = startOfMonth(date)
   result.setMonth(result.getMonth() + months)

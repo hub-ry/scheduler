@@ -1,85 +1,48 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { api, ApiError } from '../api'
 import { toDateInput } from '../dates'
-
-/**
- * Log a competing event: another org's thing that will take your audience.
- *
- * Opened by a button rather than by clicking a day, because on the Schedule tab
- * the grid already owns the drag gesture for the search window and a click that
- * sometimes meant "add an event" and sometimes meant "start a range" would
- * misfire on every short drag. Clicking a day where nothing else claims the
- * gesture just prefills the date.
- *
- * Four fields, not the full event editor: expected attendance and audience
- * fraction exist on the model but nobody has ever filled them in here.
- */
+import { Icon } from './Icons'
 
 interface Props {
-  /** Prefills the date, when the form was opened from a specific day. */
   day?: Date
-  /** Where the pointer was. Given, the form floats at the cursor instead of
-   *  sitting in the flow and pushing the calendar down the page. */
   at?: { x: number; y: number } | null
   onClose: () => void
   onAdded: () => void
 }
 
-export function QuickAddEvent({ day, at = null, onClose, onAdded }: Props) {
-  const card = useRef<HTMLFormElement>(null)
-  const [placement, setPlacement] = useState<{ left: number; top: number } | null>(null)
+const DURATION_PRESETS = [30, 60, 90, 120]
 
-  // Measured after mount rather than guessed: the form's height depends on
-  // whether an error is showing, and a popover that hangs off the bottom of the
-  // window is worse than one that takes a frame to settle.
-  useLayoutEffect(() => {
-    if (!at || !card.current) return
-    const box = card.current.getBoundingClientRect()
-    const margin = 12
-    setPlacement({
-      left: Math.min(at.x + margin, window.innerWidth - box.width - margin),
-      top: Math.min(at.y + margin, window.innerHeight - box.height - margin),
-    })
-  }, [at])
+export function QuickAddEvent({ day, onClose, onAdded }: Props) {
+  const modalRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  // Escape closes, and so does a click anywhere outside. Both are what a
-  // floating panel is expected to do, and without them the only way out is the
-  // × in the corner.
-  useEffect(() => {
-    if (!at) return
-    function onKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose()
-    }
-    function onPointer(event: PointerEvent) {
-      if (card.current && !card.current.contains(event.target as Node)) onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    // Deferred a tick: the very click that opened this would otherwise be the
-    // outside click that closes it.
-    const timer = setTimeout(() => window.addEventListener('pointerdown', onPointer), 0)
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      window.removeEventListener('pointerdown', onPointer)
-      clearTimeout(timer)
-    }
-  }, [at, onClose])
-
-  const [date, setDate] = useState(() => toDateInput(day ?? new Date()))
+  const [isOurs, setIsOurs] = useState(false)
   const [title, setTitle] = useState('')
   const [organization, setOrganization] = useState('')
+  const [date, setDate] = useState(() => toDateInput(day ?? new Date()))
   const [start, setStart] = useState('19:00')
   const [minutes, setMinutes] = useState(60)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function submit(event: React.FormEvent) {
-    event.preventDefault()
-    if (title.trim() === '') {
-      setError('Give it a name.')
+  useEffect(() => {
+    inputRef.current?.focus()
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!title.trim()) {
+      setError('Please provide an event title.')
       return
     }
     setBusy(true)
     setError(null)
+
     try {
       const [hours, mins] = start.split(':').map(Number)
       const startsAt = new Date(`${date}T00:00:00`)
@@ -91,17 +54,15 @@ export function QuickAddEvent({ day, at = null, onClose, onAdded }: Props) {
         organization: organization.trim(),
         location: '',
         starts_at: `${date}T${start}:00`,
-        // Same local-time convention the rest of the app uses; never
-        // toISOString, which would shift this into UTC and land it on the
-        // wrong day for anything late in the evening.
         ends_at: `${toDateInput(endsAt)}T${String(endsAt.getHours()).padStart(2, '0')}:${String(
           endsAt.getMinutes(),
         ).padStart(2, '0')}:00`,
         expected_attendance: 0,
         audience_fraction: 1,
         source: 'manual',
-        is_ours: false,
+        is_ours: isOurs,
       })
+
       onAdded()
       onClose()
     } catch (caught) {
@@ -112,87 +73,128 @@ export function QuickAddEvent({ day, at = null, onClose, onAdded }: Props) {
   }
 
   return (
-    <form
-      ref={card}
-      className={`quick-add${at ? ' is-floating' : ''}`}
-      onSubmit={submit}
-      style={
-        at
-          ? { left: placement?.left ?? at.x + 12, top: placement?.top ?? at.y + 12, visibility: placement ? 'visible' : 'hidden' }
-          : undefined
-      }
-    >
-      <div className="quick-add-head">
-        <strong>Competing event</strong>
-        <button type="button" className="ghost icon" aria-label="Cancel" onClick={onClose}>
-          ×
-        </button>
-      </div>
-
-      {error && <div className="notice error">{error}</div>}
-
-      <div className="field">
-        <label htmlFor="qa-title">Event</label>
-        <input
-          id="qa-title"
-          value={title}
-          placeholder="Robotics callout"
-          autoFocus
-          disabled={busy}
-          onChange={(event) => setTitle(event.target.value)}
-        />
-      </div>
-
-      <div className="field">
-        <label htmlFor="qa-org">Organization</label>
-        <input
-          id="qa-org"
-          value={organization}
-          placeholder="optional"
-          disabled={busy}
-          onChange={(event) => setOrganization(event.target.value)}
-        />
-      </div>
-
-      <div className="field-row">
-        <div className="field">
-          <label htmlFor="qa-date">Date</label>
-          <input
-            id="qa-date"
-            type="date"
-            value={date}
-            disabled={busy}
-            onChange={(event) => setDate(event.target.value)}
-          />
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-card quick-add-modal" ref={modalRef} role="dialog" aria-modal="true">
+        <div className="modal-header">
+          <div className="modal-title-wrap">
+            <span className={`event-badge ${isOurs ? 'kind-ours' : 'kind-event'}`}>
+              {isOurs ? 'Our Event' : 'Competing Event'}
+            </span>
+            <h3>Add New Event</h3>
+          </div>
+          <button type="button" className="btn-icon" onClick={onClose} aria-label="Close dialog">
+            <Icon name="x" size={16} />
+          </button>
         </div>
-        <div className="field">
-          <label htmlFor="qa-start">Starts</label>
-          <input
-            id="qa-start"
-            type="time"
-            value={start}
-            disabled={busy}
-            onChange={(event) => setStart(event.target.value)}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="qa-len">Length (min)</label>
-          <input
-            id="qa-len"
-            type="number"
-            min={15}
-            max={480}
-            step={15}
-            value={minutes}
-            disabled={busy}
-            onChange={(event) => setMinutes(Number(event.target.value))}
-          />
-        </div>
-      </div>
 
-      <button className="primary" type="submit" disabled={busy}>
-        {busy ? 'Adding…' : 'Add competing event'}
-      </button>
-    </form>
+        <form onSubmit={handleSubmit} className="quick-add-form">
+          {error && <div className="notice error">{error}</div>}
+
+          <div className="type-toggle-row">
+            <button
+              type="button"
+              className={`type-pill ${!isOurs ? 'is-active' : ''}`}
+              onClick={() => setIsOurs(false)}
+            >
+              Competing Event
+            </button>
+            <button
+              type="button"
+              className={`type-pill ${isOurs ? 'is-active' : ''}`}
+              onClick={() => setIsOurs(true)}
+            >
+              Our Club Event
+            </button>
+          </div>
+
+          <div className="field">
+            <label htmlFor="qa-title">Event Title</label>
+            <input
+              id="qa-title"
+              ref={inputRef}
+              value={title}
+              placeholder={isOurs ? 'e.g. BoilerMake Callout #1' : 'e.g. Robotics Club Callout'}
+              disabled={busy}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="qa-org">Host / Organization <span className="label-opt">(optional)</span></label>
+            <input
+              id="qa-org"
+              value={organization}
+              placeholder="e.g. ACM, IEEE, Company"
+              disabled={busy}
+              onChange={(e) => setOrganization(e.target.value)}
+            />
+          </div>
+
+          <div className="field-row">
+            <div className="field flex-2">
+              <label htmlFor="qa-date">Date</label>
+              <input
+                id="qa-date"
+                type="date"
+                value={date}
+                disabled={busy}
+                onChange={(e) => setDate(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="field flex-1">
+              <label htmlFor="qa-start">Start Time</label>
+              <input
+                id="qa-start"
+                type="time"
+                value={start}
+                disabled={busy}
+                onChange={(e) => setStart(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="field">
+            <div className="label-with-presets">
+              <label htmlFor="qa-duration">Duration ({minutes} mins)</label>
+              <div className="preset-buttons">
+                {DURATION_PRESETS.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    className={`btn-preset ${minutes === p ? 'is-selected' : ''}`}
+                    onClick={() => setMinutes(p)}
+                  >
+                    {p}m
+                  </button>
+                ))}
+              </div>
+            </div>
+            <input
+              id="qa-duration"
+              type="range"
+              min={15}
+              max={240}
+              step={15}
+              value={minutes}
+              disabled={busy}
+              onChange={(e) => setMinutes(Number(e.target.value))}
+            />
+          </div>
+
+          <div className="modal-actions">
+            <button type="button" className="btn-secondary" onClick={onClose} disabled={busy}>
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary" disabled={busy || !title.trim()}>
+              {busy ? 'Saving...' : 'Create Event'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   )
 }

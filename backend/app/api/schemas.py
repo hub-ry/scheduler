@@ -126,6 +126,18 @@ class EventIn(BaseModel):
         return self
 
 
+class EventUpdate(BaseModel):
+    """A partial edit. Dragging a chip to another day sends only the two times."""
+
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    organization: str | None = None
+    location: str | None = None
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
+    expected_attendance: int | None = Field(default=None, ge=0)
+    audience_fraction: float | None = Field(default=None, gt=0, le=1)
+
+
 class EventOut(EventIn):
     id: int
     weight: float
@@ -200,6 +212,8 @@ class BusyOut(BaseModel):
     kind: str
     weight: float
     detail: str = ""
+    # Present when the block is an editable club event, absent otherwise.
+    event_id: int | None = None
 
 
 class AcademicDateOut(BaseModel):
