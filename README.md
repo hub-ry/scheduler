@@ -42,18 +42,6 @@ It exists because the API is otherwise wide open. Signing in with Google authori
 
 Set `SCHEDULER_PASSWORD` to turn it on. Leave it unset and the gate disappears, which is the right default for `./dev` on a laptop - nothing to type and nothing reachable from outside the machine anyway. Sessions last 30 days, signed with an HMAC derived from the password itself, so changing the password logs everybody out. That is what you want from a shared secret: revoking access means rotating it.
 
-### Quickstart
-
-```bash
-./check    # tests, typecheck, lint
-./dev      # Vite with hot reload + FastAPI
-./serve    # build the bundle and serve it all from one process
-```
-
-Needs Python 3.12+ and Node 20+. `./serve` creates its own virtualenv and installs both dependency sets on first run. Google Calendar sync needs `VITE_GOOGLE_CLIENT_ID`; without it every other part of the app still works.
-
-`./snapshot` dumps the whole database to `frontend/public/snapshot.json` as plain text, readable with no database at all.
-
 ### Storage and Architecture
 
 State is one SQLite file. A few thousand rows of campus schedule does not need a service running next to it, and `SCHEDULER_DATABASE_URL` is the single thing to change if that ever stops being true. A copy of the file is a backup.
