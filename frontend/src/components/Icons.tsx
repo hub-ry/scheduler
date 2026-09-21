@@ -25,7 +25,6 @@ export type IconName =
   | 'upload'
   | 'dragHandle'
   | 'sparkle'
-  | 'burstStar'
   | 'coffee'
   | 'gridFour'
   | 'info'
@@ -204,12 +203,6 @@ const ICONS: Record<IconName, React.ReactNode> = {
     </>
   ),
   sparkle: <polygon points="128 24 146 90 212 108 146 126 128 192 110 126 44 108 110 90 128 24" />,
-  burstStar: (
-    <polygon
-      points="128 16 142 102 228 116 150 142 164 228 116 150 28 136 106 112 128 16"
-      fill="currentColor"
-    />
-  ),
   coffee: (
     <>
       <path d="M48 80h136a8 8 0 0 1 8 8v64a56 56 0 0 1-56 56H96a56 56 0 0 1-56-56V88a8 8 0 0 1 8-8z" />

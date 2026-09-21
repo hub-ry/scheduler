@@ -1,76 +1,13 @@
 /*
- * Purdue Hackers x Notion Calendar Design System
- * Creative themes inspired by burst.purduehackers.com and spill.purduehackers.com.
+ * Scheduler Design System - Spill Palette
+ * Roasted espresso, warm paper cream, matcha green, red clay accents, and tactile grain.
  */
 
-:root,
-:root[data-theme='burst'] {
+:root {
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  /* Burst Theme (Default): Electric Red #E6002A, Obsidian Noir, Pure White */
-  --bg-app: #0c0d10;
-  --bg-surface: #14151b;
-  --bg-surface-hover: #1b1d26;
-  --bg-surface-active: #232532;
-  --bg-panel: #111218;
-  --bg-card: #161822;
-
-  --border-subtle: rgba(255, 255, 255, 0.1);
-  --border-default: rgba(255, 255, 255, 0.16);
-  --border-strong: rgba(255, 255, 255, 0.28);
-
-  --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.76);
-  --text-muted: rgba(255, 255, 255, 0.48);
-  --text-faint: rgba(255, 255, 255, 0.28);
-
-  /* Accents */
-  --accent: #e6002a;
-  --accent-hover: #ff1a40;
-  --accent-soft: rgba(230, 0, 42, 0.18);
-  --accent-border: rgba(230, 0, 42, 0.45);
-
-  --notion-red: #e6002a;
-  --notion-green: #22c55e;
-  --notion-orange: #f97316;
-  --notion-purple: #a855f7;
-  --notion-blue: #06b6d4;
-
-  /* Event Pill Colors (Burst Palette) */
-  --chip-ours-bg: rgba(230, 0, 42, 0.22);
-  --chip-ours-text: #ff4d6a;
-  --chip-ours-border: rgba(230, 0, 42, 0.4);
-
-  --chip-event-bg: rgba(168, 85, 247, 0.2);
-  --chip-event-text: #c084fc;
-  --chip-event-border: rgba(168, 85, 247, 0.35);
-
-  --chip-exam-bg: rgba(249, 115, 22, 0.2);
-  --chip-exam-text: #fb923c;
-  --chip-exam-border: rgba(249, 115, 22, 0.35);
-
-  --chip-closed-bg: rgba(230, 0, 42, 0.25);
-  --chip-closed-text: #ff6b81;
-  --chip-closed-border: rgba(230, 0, 42, 0.45);
-
-  --chip-academic-bg: rgba(251, 191, 36, 0.18);
-  --chip-academic-text: #fcd34d;
-  --chip-academic-border: rgba(251, 191, 36, 0.35);
-
-  --chip-preview-bg: rgba(230, 0, 42, 0.28);
-  --chip-preview-text: #ffffff;
-  --chip-preview-border: #e6002a;
-
-  --radius-xs: 3px;
-  --radius-sm: 5px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-full: 9999px;
-}
-
-:root[data-theme='spill'] {
-  /* Spill Theme: Vienna Coffee House, Roasted Espresso, Warm Cream, Matcha, Red Clay */
+  /* Spill Palette: Vienna Coffee House Aesthetic */
   --bg-app: #1c1513;
   --bg-surface: #241c19;
   --bg-surface-hover: #2e2320;
@@ -98,6 +35,7 @@
   --notion-purple: #896258;
   --notion-blue: #556432;
 
+  /* Event Pill Colors */
   --chip-ours-bg: rgba(185, 90, 45, 0.25);
   --chip-ours-text: #e07a48;
   --chip-ours-border: rgba(185, 90, 45, 0.45);
@@ -121,114 +59,12 @@
   --chip-preview-bg: rgba(185, 90, 45, 0.28);
   --chip-preview-text: #f6eee3;
   --chip-preview-border: #b95a2d;
-}
 
-:root[data-theme='midnight'] {
-  /* Notion Midnight Theme: Minimalist Dark Charcoal #191919 */
-  --bg-app: #191919;
-  --bg-surface: #202020;
-  --bg-surface-hover: #262626;
-  --bg-surface-active: #2d2d2d;
-  --bg-panel: #1e1e1e;
-  --bg-card: #222222;
-
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-default: rgba(255, 255, 255, 0.12);
-  --border-strong: rgba(255, 255, 255, 0.22);
-
-  --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.7);
-  --text-muted: rgba(255, 255, 255, 0.44);
-  --text-faint: rgba(255, 255, 255, 0.28);
-
-  --accent: #ea4e43;
-  --accent-hover: #f1665c;
-  --accent-soft: rgba(234, 78, 67, 0.18);
-  --accent-border: rgba(234, 78, 67, 0.35);
-
-  --notion-red: #ea4e43;
-  --notion-green: #57ab5a;
-  --notion-orange: #e07d3b;
-  --notion-purple: #9d68d3;
-  --notion-blue: #529cca;
-
-  --chip-ours-bg: rgba(35, 78, 55, 0.6);
-  --chip-ours-text: #85e89d;
-  --chip-ours-border: rgba(133, 232, 157, 0.2);
-
-  --chip-event-bg: rgba(85, 45, 30, 0.6);
-  --chip-event-text: #ffab70;
-  --chip-event-border: rgba(255, 171, 112, 0.2);
-
-  --chip-exam-bg: rgba(85, 30, 30, 0.6);
-  --chip-exam-text: #ff7b72;
-  --chip-exam-border: rgba(255, 123, 114, 0.2);
-
-  --chip-closed-bg: rgba(65, 40, 95, 0.6);
-  --chip-closed-text: #d2a8ff;
-  --chip-closed-border: rgba(210, 168, 255, 0.2);
-
-  --chip-academic-bg: rgba(45, 55, 85, 0.6);
-  --chip-academic-text: #79c0ff;
-  --chip-academic-border: rgba(121, 192, 255, 0.2);
-
-  --chip-preview-bg: rgba(234, 78, 67, 0.28);
-  --chip-preview-text: #ffffff;
-  --chip-preview-border: #ea4e43;
-}
-
-:root[data-theme='light'] {
-  /* Studio Gallery Light */
-  --bg-app: #fbfbfa;
-  --bg-surface: #ffffff;
-  --bg-surface-hover: #f3f3f1;
-  --bg-surface-active: #e8e8e5;
-  --bg-panel: #f7f7f5;
-  --bg-card: #ffffff;
-
-  --border-subtle: rgba(55, 53, 47, 0.08);
-  --border-default: rgba(55, 53, 47, 0.14);
-  --border-strong: rgba(55, 53, 47, 0.25);
-
-  --text-primary: #1e1e1e;
-  --text-secondary: rgba(30, 30, 30, 0.72);
-  --text-muted: rgba(30, 30, 30, 0.5);
-  --text-faint: rgba(30, 30, 30, 0.3);
-
-  --accent: #e6002a;
-  --accent-hover: #c40024;
-  --accent-soft: rgba(230, 0, 42, 0.12);
-  --accent-border: rgba(230, 0, 42, 0.3);
-
-  --notion-red: #e6002a;
-  --notion-green: #15803d;
-  --notion-orange: #c2410c;
-  --notion-purple: #7e22ce;
-  --notion-blue: #0284c7;
-
-  --chip-ours-bg: rgba(230, 0, 42, 0.12);
-  --chip-ours-text: #b90022;
-  --chip-ours-border: rgba(230, 0, 42, 0.28);
-
-  --chip-event-bg: rgba(217, 115, 13, 0.12);
-  --chip-event-text: #b55d04;
-  --chip-event-border: rgba(217, 115, 13, 0.28);
-
-  --chip-exam-bg: rgba(235, 87, 87, 0.12);
-  --chip-exam-text: #cb3a31;
-  --chip-exam-border: rgba(235, 87, 87, 0.28);
-
-  --chip-closed-bg: rgba(105, 64, 165, 0.12);
-  --chip-closed-text: #532f8c;
-  --chip-closed-border: rgba(105, 64, 165, 0.28);
-
-  --chip-academic-bg: rgba(11, 110, 153, 0.12);
-  --chip-academic-text: #0b6e99;
-  --chip-academic-border: rgba(11, 110, 153, 0.28);
-
-  --chip-preview-bg: rgba(230, 0, 42, 0.18);
-  --chip-preview-text: #e6002a;
-  --chip-preview-border: #e6002a;
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-full: 9999px;
 }
 
 /* Base Reset */
@@ -302,12 +138,6 @@ button, input, select, textarea {
   border: 1px solid var(--accent-border);
 }
 
-.brand-burst-symbol {
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1;
-}
-
 .brand-text-block {
   display: flex;
   align-items: center;
@@ -318,8 +148,7 @@ button, input, select, textarea {
   font-size: 13.5px;
   font-weight: 700;
   color: var(--text-primary);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .brand-divider {
@@ -337,19 +166,6 @@ button, input, select, textarea {
   border-radius: var(--radius-xs);
   letter-spacing: 0.03em;
   text-transform: uppercase;
-}
-
-.brand-burst-canvas {
-  display: block;
-  cursor: crosshair;
-  border-radius: var(--radius-xs);
-  margin-left: 2px;
-}
-
-@media (max-width: 900px) {
-  .brand-burst-canvas {
-    display: none;
-  }
 }
 
 .notion-nav-tabs {
@@ -2370,12 +2186,8 @@ button, input, select, textarea {
   line-height: 1;
 }
 
-/* Tactile Paper Grain Overlay for Spill Theme */
+/* Tactile Paper Grain Overlay */
 .grain-overlay {
-  display: none;
-}
-
-[data-theme='spill'] .grain-overlay {
   display: block;
   position: fixed;
   top: 0;
@@ -2390,66 +2202,13 @@ button, input, select, textarea {
 
 /* Ambient Spilled Coffee Ring Art */
 .spill-ambient-ring {
-  display: none;
-}
-
-[data-theme='spill'] .spill-ambient-ring {
   display: block;
   position: absolute;
   bottom: 14px;
   right: 18px;
   pointer-events: none;
   z-index: 1;
-  opacity: 0.7;
-}
-
-/* Theme Toggle Pills (Burst | Spill | Notion | Light) */
-.theme-toggle-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  background: rgba(255, 255, 255, 0.04);
-  padding: 2px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-}
-
-.theme-pill-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  border-radius: var(--radius-xs);
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 11.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.12s ease;
-  user-select: none;
-}
-
-.theme-pill-btn:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.theme-pill-btn.is-active {
-  background: rgba(255, 255, 255, 0.12);
-  color: var(--text-primary);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-.theme-symbol {
-  color: var(--accent);
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.theme-name {
-  font-size: 11px;
+  opacity: 0.75;
 }
 
 /* Spinning Animation */

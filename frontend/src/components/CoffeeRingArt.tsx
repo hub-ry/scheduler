@@ -4,7 +4,7 @@ interface Props {
 }
 
 /**
- * Spilled coffee ring art inspired by spill.purduehackers.com ("late nights, spilled coffee").
+ * Spilled coffee ring art.
  */
 export function CoffeeRingArt({ className = '', size = 120 }: Props) {
   return (
@@ -12,7 +12,7 @@ export function CoffeeRingArt({ className = '', size = 120 }: Props) {
       className={`coffee-ring-art ${className}`.trim()}
       style={{ width: size, height: size }}
       aria-hidden="true"
-      title="Vienna Coffee House - Spilled Coffee Art"
+      title="Spilled Coffee Art"
     >
       <svg
         viewBox="0 0 160 160"

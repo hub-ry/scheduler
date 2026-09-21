@@ -1,15 +1,12 @@
 import { useState } from 'react'
 import type { Idea } from './api'
-import { BurstArtCanvas } from './components/BurstArtCanvas'
 import { CalendarTab } from './components/CalendarTab'
 import { Icon, type IconName } from './components/Icons'
 import { Ideas } from './components/Ideas'
 import { QuickAddEvent } from './components/QuickAddEvent'
 import { Setup } from './components/Setup'
-import { ThemeToggle } from './components/ThemeToggle'
 import { ToastProvider } from './components/Toast'
 import { useToast } from './toastContext'
-import { useTheme } from './theme'
 
 type Tab = 'calendar' | 'ideas' | 'setup'
 
@@ -31,7 +28,6 @@ function AppContent() {
   const { showToast } = useToast()
   const [tab, setTab] = useState<Tab>('calendar')
   const [refreshKey, setRefreshKey] = useState(0)
-  const [theme, setTheme] = useTheme()
   const [finderOpen, setFinderOpen] = useState(false)
   const [activeIdea, setActiveIdea] = useState<Idea | null>(null)
   const [quickAddOpen, setQuickAddOpen] = useState(false)
@@ -51,14 +47,13 @@ function AppContent() {
         <div className="notion-topbar-left">
           <div className="notion-brand">
             <div className="brand-logo-wrap">
-              <span className="brand-burst-symbol">✷</span>
+              <Icon name="coffee" size={15} />
             </div>
             <div className="brand-text-block">
               <span className="brand-name">Scheduler</span>
               <span className="brand-divider">/</span>
-              <span className="brand-tag">Purdue Hackers</span>
+              <span className="brand-tag">Purdue CS</span>
             </div>
-            <BurstArtCanvas width={110} height={34} className="brand-burst-canvas" />
           </div>
 
           <nav className="notion-nav-tabs" role="tablist">
@@ -110,8 +105,6 @@ function AppContent() {
               </button>
             </>
           )}
-
-          <ThemeToggle theme={theme} onChange={setTheme} />
         </div>
       </header>
 
