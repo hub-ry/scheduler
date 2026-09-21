@@ -339,6 +339,7 @@ export function CalendarTab({
           onMoveEvent={(block, day) =>
             handleEdit(moveEventToDay(block, day), `Rescheduled to ${toDateInput(day)}`)
           }
+          onUpdateEvent={(id, patch) => handleEdit(api.updateEvent(id, patch), 'Event updated')}
           headerActions={
             <div className="notion-toolbar-actions">
               <button

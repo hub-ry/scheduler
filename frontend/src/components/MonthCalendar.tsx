@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import type { Busy } from '../api'
+import type { Busy, ClubEvent } from '../api'
 import {
   addMonths,
   DAY_NAMES,
@@ -36,6 +36,10 @@ interface Props {
   onManageInCalendar?: () => void
   onDeleteEvent?: (id: number) => void
   onMoveEvent?: (block: Busy, day: Date) => void
+  onUpdateEvent?: (
+    id: number,
+    patch: Partial<Pick<ClubEvent, 'title' | 'organization' | 'location' | 'starts_at' | 'ends_at'>>,
+  ) => Promise<void> | void
   headerActions?: React.ReactNode
 }
 
@@ -88,6 +92,7 @@ export function MonthCalendar({
   onManageInCalendar,
   onDeleteEvent,
   onMoveEvent,
+  onUpdateEvent,
   headerActions,
 }: Props) {
   const [activeEvent, setActiveEvent] = useState<{ block: Busy; rect: DOMRect } | null>(null)
@@ -325,6 +330,14 @@ export function MonthCalendar({
                 }
               : undefined
           }
+          onUpdate={
+            onUpdateEvent && typeof activeEvent.block.event_id === 'number'
+              ? async (patch) => {
+                  await onUpdateEvent(activeEvent.block.event_id as number, patch)
+                  setActiveEvent(null)
+                }
+              : undefined
+          }
         />
       )}
 
@@ -534,38 +547,45 @@ function EventDetailsPopover({
   onClose,
   onDelete,
   onMove,
+  onUpdate,
 }: {
   block: Busy
   anchorRect: DOMRect
   onClose: () => void
   onDelete?: () => void
   onMove?: (day: Date) => void
+  onUpdate?: (
+    patch: Partial<Pick<ClubEvent, 'title' | 'organization' | 'location' | 'starts_at' | 'ends_at'>>,
+  ) => Promise<void> | void
 }) {
   const popoverRef = useRef<HTMLDivElement>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [rescheduleDate, setRescheduleDate] = useState('')
   const [showReschedule, setShowReschedule] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
 
   const start = parseLocal(block.start)
   const end = parseLocal(block.end)
   const isWholeDay = block.kind === 'closed' || block.kind === 'academic'
 
+  const [editTitle, setEditTitle] = useState(block.label)
+  const [editDate, setEditDate] = useState(() => toDateInput(start))
+  const [editStart, setEditStart] = useState(() => {
+    return `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`
+  })
+  const [editEnd, setEditEnd] = useState(() => {
+    return `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`
+  })
+  const [editOrg, setEditOrg] = useState(block.detail ?? '')
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
     }
-    function onPointerDown(e: PointerEvent) {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
-        onClose()
-      }
-    }
     window.addEventListener('keydown', onKeyDown)
-    const t = setTimeout(() => window.addEventListener('pointerdown', onPointerDown), 0)
-    return () => {
-      window.removeEventListener('keydown', onKeyDown)
-      window.removeEventListener('pointerdown', onPointerDown)
-      clearTimeout(t)
-    }
+    return () => window.removeEventListener('keydown', onKeyDown)
   }, [onClose])
 
   const style = useMemo(() => {
@@ -578,8 +598,9 @@ function EventDetailsPopover({
     if (left < 16) left = 16
 
     let top = anchorRect.bottom + margin
-    if (top + 280 > window.innerHeight) {
-      top = Math.max(16, anchorRect.top - 280 - margin)
+    const estimatedHeight = isEditing ? 340 : showReschedule ? 220 : 200
+    if (top + estimatedHeight > window.innerHeight) {
+      top = Math.max(16, anchorRect.top - estimatedHeight - margin)
     }
 
     return {
@@ -587,15 +608,52 @@ function EventDetailsPopover({
       left: `${left}px`,
       width: `${popWidth}px`,
     }
-  }, [anchorRect])
+  }, [anchorRect, isEditing, showReschedule])
+
+  async function handleSaveEdit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!onUpdate) return
+    if (!editTitle.trim()) {
+      setEditError('Title is required')
+      return
+    }
+    setSavingEdit(true)
+    setEditError(null)
+    try {
+      await onUpdate({
+        title: editTitle.trim(),
+        organization: editOrg.trim(),
+        starts_at: `${editDate}T${editStart}:00`,
+        ends_at: `${editDate}T${editEnd}:00`,
+      })
+      onClose()
+    } catch (caught) {
+      setEditError(caught instanceof Error ? caught.message : String(caught))
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  const canMutate = Boolean(onDelete || onMove || onUpdate)
 
   return (
-    <div className="notion-popover-backdrop">
-      <div ref={popoverRef} className="notion-event-popover" style={style}>
-        <div className="popover-header">
-          <div className="popover-kind-badge">
-            <span className={`chip-dot kind-${block.kind}`} />
-            <span>{KIND_NAMES[block.kind]}</span>
+    <div className="notion-popover-backdrop" onClick={onClose}>
+      <div
+        ref={popoverRef}
+        className="notion-popover"
+        style={style}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Event Details"
+      >
+        <div className="notion-popover-header">
+          <div className="notion-popover-badges">
+            <span className={`notion-kind-tag kind-${block.kind}`}>
+              <span className={`chip-dot kind-${block.kind}`} />
+              <span>{KIND_NAMES[block.kind]}</span>
+            </span>
+            {block.event_id && <span className="notion-editable-tag">Custom</span>}
           </div>
           <button
             type="button"
@@ -607,109 +665,215 @@ function EventDetailsPopover({
           </button>
         </div>
 
-        <div className="popover-body">
-          <h4 className="popover-title">{block.label}</h4>
-
-          <div className="popover-meta-row">
-            <Icon name="calendar" size={14} />
-            <span>{formatDay(start)}</span>
-          </div>
-
-          {!isWholeDay && (
-            <div className="popover-meta-row">
-              <Icon name="clock" size={14} />
-              <span>
-                {formatTime(start)} - {formatTime(end)}
-              </span>
-            </div>
-          )}
-
-          {block.detail && <p className="popover-detail">{block.detail}</p>}
-
-          {block.weight !== undefined && (
-            <div className="popover-meta-row faint">
-              <Icon name="users" size={14} />
-              <span>Audience Weight: {block.weight}</span>
-            </div>
-          )}
-
-          {showReschedule && onMove && (
-            <div className="popover-reschedule-box">
-              <label htmlFor="reschedule-input">Reschedule to:</label>
+        {isEditing ? (
+          <form onSubmit={handleSaveEdit} className="notion-popover-edit-form">
+            <div className="notion-popover-field">
+              <label htmlFor="edit-title">Title</label>
               <input
-                id="reschedule-input"
-                type="date"
-                value={rescheduleDate}
-                onChange={(e) => setRescheduleDate(e.target.value)}
+                id="edit-title"
+                className="notion-input-sm"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                required
+                disabled={savingEdit}
               />
-              <div className="reschedule-actions">
-                <button
-                  type="button"
-                  className="notion-btn-sm"
-                  onClick={() => setShowReschedule(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="notion-btn-sm notion-btn-primary"
-                  disabled={!rescheduleDate}
-                  onClick={() => {
-                    const parsed = parseLocal(`${rescheduleDate}T00:00:00`)
-                    onMove(parsed)
-                  }}
-                >
-                  Move
-                </button>
+            </div>
+
+            <div className="notion-popover-field">
+              <label htmlFor="edit-date">Date</label>
+              <input
+                id="edit-date"
+                type="date"
+                className="notion-input-sm"
+                value={editDate}
+                onChange={(e) => setEditDate(e.target.value)}
+                required
+                disabled={savingEdit}
+              />
+            </div>
+
+            <div className="notion-form-row">
+              <div className="notion-popover-field flex-1">
+                <label htmlFor="edit-start">Start</label>
+                <input
+                  id="edit-start"
+                  type="time"
+                  className="notion-input-sm"
+                  value={editStart}
+                  onChange={(e) => setEditStart(e.target.value)}
+                  required
+                  disabled={savingEdit}
+                />
+              </div>
+              <div className="notion-popover-field flex-1">
+                <label htmlFor="edit-end">End</label>
+                <input
+                  id="edit-end"
+                  type="time"
+                  className="notion-input-sm"
+                  value={editEnd}
+                  onChange={(e) => setEditEnd(e.target.value)}
+                  required
+                  disabled={savingEdit}
+                />
               </div>
             </div>
-          )}
-        </div>
 
-        {(onDelete || onMove) && !showReschedule && (
-          <div className="popover-footer">
-            {onMove && (
+            <div className="notion-popover-field">
+              <label htmlFor="edit-org">Host / Organization</label>
+              <input
+                id="edit-org"
+                className="notion-input-sm"
+                value={editOrg}
+                placeholder="e.g. Purdue Hackers, ACM"
+                onChange={(e) => setEditOrg(e.target.value)}
+                disabled={savingEdit}
+              />
+            </div>
+
+            {editError && <div className="notion-form-error">{editError}</div>}
+
+            <div className="notion-popover-actions">
               <button
                 type="button"
-                className="notion-btn-sm"
+                className="notion-btn-subtle-sm"
+                onClick={() => setIsEditing(false)}
+                disabled={savingEdit}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="notion-btn-primary-sm"
+                disabled={savingEdit || !editTitle.trim()}
+              >
+                {savingEdit ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </form>
+        ) : showReschedule && onMove ? (
+          <div className="notion-reschedule-box">
+            <label htmlFor="reschedule-input">Move to new date:</label>
+            <input
+              id="reschedule-input"
+              type="date"
+              className="notion-input-sm"
+              value={rescheduleDate}
+              onChange={(e) => setRescheduleDate(e.target.value)}
+            />
+            <div className="confirm-btn-row">
+              <button
+                type="button"
+                className="notion-btn-subtle-sm"
+                onClick={() => setShowReschedule(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="notion-btn-primary-sm"
+                disabled={!rescheduleDate}
                 onClick={() => {
-                  setRescheduleDate(toDateInput(start))
-                  setShowReschedule(true)
+                  const parsed = parseLocal(`${rescheduleDate}T00:00:00`)
+                  onMove(parsed)
                 }}
               >
-                <Icon name="pencilSimple" size={13} />
-                <span>Reschedule</span>
+                Move Event
               </button>
-            )}
+            </div>
+          </div>
+        ) : (
+          <div className="notion-popover-body">
+            <h4 className="notion-popover-title">{block.label}</h4>
 
-            {onDelete && !confirmDelete && (
-              <button
-                type="button"
-                className="notion-btn-sm text-danger"
-                onClick={() => setConfirmDelete(true)}
-              >
-                <Icon name="trash" size={13} />
-                <span>Delete</span>
-              </button>
-            )}
+            <div className="notion-popover-meta">
+              <div className="meta-row">
+                <Icon name="calendar" size={14} />
+                <span>{formatDay(start)}</span>
+              </div>
 
-            {confirmDelete && onDelete && (
-              <div className="delete-confirm-group">
-                <span>Sure?</span>
-                <button
-                  type="button"
-                  className="notion-btn-sm text-danger"
-                  onClick={onDelete}
-                >
-                  Yes, delete
-                </button>
-                <button
-                  type="button"
-                  className="notion-btn-sm"
-                  onClick={() => setConfirmDelete(false)}
-                >
-                  Cancel
-                </button>
+              {!isWholeDay && (
+                <div className="meta-row">
+                  <Icon name="clock" size={14} />
+                  <span>
+                    {formatTime(start)} - {formatTime(end)}
+                  </span>
+                </div>
+              )}
+
+              {block.detail && (
+                <div className="meta-row">
+                  <Icon name="info" size={14} />
+                  <span>{block.detail}</span>
+                </div>
+              )}
+
+              {block.weight !== undefined && (
+                <div className="meta-row faint">
+                  <Icon name="users" size={14} />
+                  <span>Audience Weight: {block.weight}</span>
+                </div>
+              )}
+            </div>
+
+            {canMutate && (
+              <div className="notion-popover-actions">
+                <div className="notion-popover-left-actions">
+                  {onUpdate && (
+                    <button
+                      type="button"
+                      className="notion-btn-subtle-sm"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      <Icon name="pencilSimple" size={13} />
+                      <span>Edit</span>
+                    </button>
+                  )}
+                  {onMove && (
+                    <button
+                      type="button"
+                      className="notion-btn-subtle-sm"
+                      onClick={() => {
+                        setRescheduleDate(toDateInput(start))
+                        setShowReschedule(true)
+                      }}
+                    >
+                      <Icon name="calendar" size={13} />
+                      <span>Move</span>
+                    </button>
+                  )}
+                </div>
+
+                {onDelete && !confirmDelete && (
+                  <button
+                    type="button"
+                    className="notion-btn-danger-sm"
+                    onClick={() => setConfirmDelete(true)}
+                  >
+                    <Icon name="trash" size={13} />
+                    <span>Delete</span>
+                  </button>
+                )}
+
+                {confirmDelete && onDelete && (
+                  <div className="notion-delete-confirm-box">
+                    <span>Sure?</span>
+                    <button
+                      type="button"
+                      className="notion-btn-danger-xs"
+                      onClick={onDelete}
+                    >
+                      Yes
+                    </button>
+                    <button
+                      type="button"
+                      className="notion-btn-subtle-xs"
+                      onClick={() => setConfirmDelete(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -735,7 +899,7 @@ function DayEventsModal({
   return (
     <div className="notion-modal-backdrop" onClick={onClose}>
       <div
-        className="notion-modal-dialog"
+        className="notion-modal-card day-events-dialog"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -751,7 +915,7 @@ function DayEventsModal({
           </div>
           <button
             type="button"
-            className="notion-btn-icon"
+            className="notion-modal-close"
             onClick={onClose}
             aria-label="Close"
           >
@@ -807,13 +971,13 @@ function DayEventsModal({
               {onPickDay && (
                 <button
                   type="button"
-                  className="notion-btn-secondary add-day-btn"
+                  className="notion-btn-subtle add-day-btn"
                   onClick={(e) => {
                     onClose()
                     onPickDay(day, { x: e.clientX, y: e.clientY })
                   }}
                 >
-                  + Add Another Event on {formatDay(day)}
+                  + Add Event on {formatDay(day)}
                 </button>
               )}
             </div>

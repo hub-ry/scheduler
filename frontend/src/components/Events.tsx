@@ -195,7 +195,7 @@ export function Events({ onChanged, prefill }: Props) {
                       {formatDay(start)}
                       <br />
                       <span className="faint">
-                        {formatTime(start)} – {formatTime(parseLocal(event.ends_at))}
+                        {formatTime(start)} - {formatTime(parseLocal(event.ends_at))}
                       </span>
                     </td>
                     <td>
@@ -206,7 +206,7 @@ export function Events({ onChanged, prefill }: Props) {
                         {[event.organization, event.location].filter(Boolean).join(' · ')}
                       </span>
                     </td>
-                    <td className="num muted">{event.expected_attendance || '—'}</td>
+                    <td className="num muted">{event.expected_attendance || '-'}</td>
                     <td className="num">
                       <button
                         className="ghost"

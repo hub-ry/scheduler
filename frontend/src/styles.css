@@ -170,6 +170,50 @@ button, input, select, textarea {
   color: inherit;
 }
 
+input[type="text"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="number"],
+input[type="email"],
+input[type="search"],
+select,
+textarea {
+  color-scheme: dark;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+
+input[type="text"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="datetime-local"]:focus,
+input[type="number"]:focus,
+input[type="email"]:focus,
+input[type="search"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+  background: var(--bg-surface-hover);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+}
+
+input[type="range"] {
+  accent-color: var(--accent);
+}
+
 /* App Shell */
 .notion-app-shell {
   display: flex;
@@ -1614,31 +1658,49 @@ button, input, select, textarea {
   pointer-events: none;
 }
 
+.notion-popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  background: transparent;
+}
+
 .notion-popover {
   position: absolute;
-  width: 300px;
+  width: 320px;
   background: var(--bg-card);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
-  padding: 14px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65);
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   pointer-events: auto;
   animation: popIn 0.12s ease-out;
+  color: var(--text-primary);
 }
 
 .notion-popover-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+}
+
+.notion-popover-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .notion-kind-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 11px;
   font-weight: 600;
-  padding: 2px 6px;
+  padding: 2px 7px;
   border-radius: 3px;
 }
 
@@ -1663,50 +1725,82 @@ button, input, select, textarea {
   color: var(--chip-closed-text);
 }
 
+.notion-editable-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .notion-popover-title {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
+  line-height: 1.35;
+  margin: 0;
+}
+
+.notion-popover-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .notion-popover-meta {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   font-size: 12px;
   color: var(--text-secondary);
+  margin-top: 2px;
 }
 
 .meta-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+}
+
+.meta-row.faint {
+  color: var(--text-muted);
+  font-size: 11.5px;
 }
 
 .notion-popover-detail {
   font-size: 12px;
-  color: var(--text-muted);
-}
-
-.notion-popover-attendance {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11.5px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 0;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-subtle);
 }
 
 .notion-popover-actions {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
   margin-top: 4px;
   border-top: 1px solid var(--border-subtle);
-  padding-top: 8px;
+  padding-top: 10px;
+}
+
+.notion-popover-left-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .notion-btn-subtle-sm,
-.notion-btn-danger-sm {
+.notion-btn-danger-sm,
+.notion-btn-primary-sm {
   height: 26px;
   padding: 0 8px;
   border-radius: var(--radius-xs);
@@ -1715,6 +1809,10 @@ button, input, select, textarea {
   border: 1px solid var(--border-subtle);
   background: rgba(255, 255, 255, 0.05);
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.1s ease;
 }
 
 .notion-btn-subtle-sm {
@@ -1726,31 +1824,25 @@ button, input, select, textarea {
   color: var(--text-primary);
 }
 
+.notion-btn-primary-sm {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.notion-btn-primary-sm:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
 .notion-btn-danger-sm {
   color: #ff7b72;
   border-color: rgba(255, 123, 114, 0.3);
   background: rgba(234, 78, 67, 0.1);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .notion-btn-danger-sm:hover {
   background: rgba(234, 78, 67, 0.2);
-}
-
-.notion-confirm-box,
-.notion-reschedule-box {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-  font-size: 12px;
-}
-
-.confirm-btn-row {
-  display: flex;
-  gap: 6px;
 }
 
 .notion-btn-subtle-xs,
@@ -1780,39 +1872,462 @@ button, input, select, textarea {
   color: #ffffff;
 }
 
+.notion-delete-confirm-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.notion-reschedule-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  font-size: 12px;
+}
+
+.confirm-btn-row {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.notion-popover-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notion-popover-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notion-popover-field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
 /* Quick Add Event Modal */
-.quick-add-modal {
-  max-width: 420px;
+.quick-add-dialog {
+  max-width: 460px;
 }
 
 .quick-add-form {
-  padding: 16px 20px;
+  padding: 18px 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
-.type-toggle-row {
+.notion-segmented-control {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 3px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.segmented-tab {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.segmented-tab:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.segmented-tab.is-active {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  font-weight: 600;
+}
+
+.segmented-tab.is-active.is-ours {
+  border-color: var(--chip-ours-border);
+  background: var(--chip-ours-bg);
+  color: var(--chip-ours-text);
+}
+
+.segmented-tab.is-active.is-competing {
+  border-color: var(--chip-event-border);
+  background: var(--chip-event-bg);
+  color: var(--chip-event-text);
+}
+
+.notion-form-field {
+  display: flex;
+  flex-direction: column;
   gap: 6px;
 }
 
-.type-pill {
-  height: 30px;
-  border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-subtle);
-  font-size: 12px;
-  font-weight: 500;
+.notion-form-field label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.notion-form-field label .label-faint {
+  font-size: 11px;
+  font-weight: 400;
   color: var(--text-muted);
+}
+
+.notion-form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.notion-form-row .flex-1 {
+  flex: 1;
+}
+
+.notion-form-row .flex-2 {
+  flex: 2;
+}
+
+.notion-input,
+.quick-add-dialog input[type="text"],
+.quick-add-dialog input[type="date"],
+.quick-add-dialog input[type="time"] {
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  color-scheme: dark;
+  outline: none;
+  transition: all 0.12s ease;
+  width: 100%;
+}
+
+.notion-input:focus,
+.quick-add-dialog input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+  background: var(--bg-surface-hover);
+}
+
+.notion-input-sm {
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: inherit;
+  color-scheme: dark;
+  outline: none;
+  transition: all 0.12s ease;
+  width: 100%;
+}
+
+.notion-input-sm:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.duration-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.duration-preview-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-xs);
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+}
+
+.duration-presets-group {
+  display: flex;
+  gap: 6px;
+}
+
+.preset-pill {
+  flex: 1;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.preset-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+.preset-pill.is-selected {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.notion-range-slider {
+  width: 100%;
+  accent-color: var(--accent);
+  cursor: pointer;
+  height: 6px;
+  margin-top: 4px;
+}
+
+.notion-form-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(235, 87, 87, 0.12);
+  border: 1px solid rgba(235, 87, 87, 0.3);
+  color: #ff7676;
+  font-size: 12px;
+}
+
+.notion-modal-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Day Events Modal */
+.day-events-dialog {
+  max-width: 440px;
+}
+
+.modal-subtitle {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.modal-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modal-event-item {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.modal-event-item:hover {
+  border-color: var(--border-default);
+  background: var(--bg-surface-hover);
+  transform: translateY(-1px);
+}
+
+.modal-event-item .item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.modal-event-item .item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.modal-event-item .item-kind-pill {
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+}
+
+.modal-event-item .item-time {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.modal-event-item .item-detail {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.empty-day-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px 16px;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.empty-sparkle {
+  font-size: 24px;
+  color: var(--text-faint);
+}
+
+.add-day-btn {
+  margin-top: 6px;
+  width: 100%;
+  justify-content: center;
+}
+
+/* General form / card styles for sub-pages like Events.tsx */
+.columns {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.card h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.field-row {
+  display: flex;
+  gap: 10px;
+}
+
+.field-row .field {
+  flex: 1;
+}
+
+.field input[type="text"],
+.field input[type="datetime-local"],
+.field input[type="number"] {
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  color-scheme: dark;
+  outline: none;
+  transition: all 0.12s ease;
+  width: 100%;
+}
+
+.field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+button.primary {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+
+button.primary:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+button.ghost {
+  height: 26px;
+  padding: 0 8px;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: #ff7b72;
+  border: 1px solid rgba(235, 87, 87, 0.3);
+  font-size: 11.5px;
   cursor: pointer;
 }
 
-.type-pill.is-active {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-  border-color: var(--border-default);
+button.ghost:hover {
+  background: rgba(235, 87, 87, 0.12);
 }
 
 /* Ideas Page */
